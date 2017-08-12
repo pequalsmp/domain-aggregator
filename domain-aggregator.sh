@@ -93,11 +93,34 @@ fetch_hosts() {
     done
 }
 
+# fetch and extract domains from a list with urls
+# <http|https://>
+# note: URL lists are more prone to false-positives
+fetch_url_hosts(){
+    while test $# -gt 0
+    do
+        CONTENTS=$(
+            # fetch the contents
+            curl "$1" |\
+            # get the entry between the 2nd and 3rd slash
+            # http|https://<domain>/
+            awk -F/ '{print $3}'
+        )
+
+        # save the contents to a temporary file
+        echo "$CONTENTS" > "$TEMP_DIR/$(($(date +%s%N)/1000000)).temporary"
+
+        shift
+    done
+}
+
 # clean up/format the domain list for final version
-domain_cleanup() {
+sanitize_domain_list() {
     cat $TEMP_DIR/*.temporary |\
     # remove ips
     grep -v "[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}" |\
+    # remove invalid domain names
+    grep "\." |\
     # remove the start match and separator symbols
     sed -e 's/||//g' -e 's/\^//g' |\
     # remove "dirty" urls
@@ -112,7 +135,10 @@ domain_cleanup() {
     sort -u |\
     # remove all white-listed domains
     grep -Fvxf $WHITELIST
+}
 
+# remove the left-over temporary files
+remove_temporary_files() {
     # remove the temporary files
     rm -rf $TEMP_DIR/*.temporary
 }
@@ -159,40 +185,38 @@ if [ -z "$WHITELIST" ]; then
     WHITELIST="/dev/null"
 fi
 
-echo "[*] update adguard domain list..."
-
+echo "[*] updating adguard domain list..."
 fetch_adblock_rules "https://adguard.com/en/filter-rules.html?id=15"
 
-echo "[*] update abuse.ch ransomware list..."
+echo "[*] updating abuse.ch lists..."
+fetch_domains_comments "https://ransomwaretracker.abuse.ch/downloads/RW_DOMBL.txt" "https://zeustracker.abuse.ch/blocklist.php?download=domainblocklist" "https://feodotracker.abuse.ch/blocklist/?download=domainblocklist"
 
-fetch_domains_comments "https://ransomwaretracker.abuse.ch/downloads/RW_DOMBL.txt"
+echo "[*] updating disconnect lists..."
+fetch_domains_comments "https://s3.amazonaws.com/lists.disconnect.me/simple_ad.txt" "https://s3.amazonaws.com/lists.disconnect.me/simple_malvertising.txt" "https://s3.amazonaws.com/lists.disconnect.me/simple_malware.txt" "https://s3.amazonaws.com/lists.disconnect.me/simple_tracking.txt"
 
-echo "[*] update disconnect ad list..."
-
-fetch_domains_comments "https://s3.amazonaws.com/lists.disconnect.me/simple_ad.txt" "https://s3.amazonaws.com/lists.disconnect.me/simple_tracking.txt"
-
-echo "[*] update eladkarako ad-hosts..."
-
+echo "[*] updating eladkarako ad-hosts..."
 fetch_domains_comments "https://raw.githubusercontent.com/eladkarako/hosts.eladkarako.com/master/_raw__hosts.txt"
 
-echo "[*] update hosts-file lists..."
+# info: https://hosts-file.net/?s=classifications
+echo "[*] updating hosts-file lists..."
+fetch_hosts "https://hosts-file.net/ad_servers.txt" "https://hosts-file.net/emd.txt" "https://hosts-file.net/exp.txt" "https://hosts-file.net/fsa.txt" "https://hosts-file.net/grm.txt" "https://hosts-file.net/hjk.txt" "https://hosts-file.net/mmt.txt" "https://hosts-file.net/pha.txt" "https://hosts-file.net/psh.txt" "https://hosts-file.net/pup.txt"
 
-fetch_hosts "https://hosts-file.net/ad_servers.txt" "https://hosts-file.net/emd.txt" "https://hosts-file.net/exp.txt" "https://hosts-file.net/fsa.txt" "https://hosts-file.net/mmt.txt" "https://hosts-file.net/pha.txt" "https://hosts-file.net/psh.txt" "https://hosts-file.net/pup.txt"
-
-echo "[*] update malwaredomains lists..."
-
+echo "[*] updating malwaredomains lists..."
 fetch_domains_comments "https://malwaredomains.usu.edu/justdomains"
 
-echo "[*] update sb's hosts..."
+# info: https://isc.sans.edu/suspicious_domains.html
+echo "[*] updating sans list..."
+fetch_domains_comments "https://isc.sans.edu/feeds/suspiciousdomains_Medium.txt"
 
-fetch_hosts "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.2o7Net/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Dead/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Risk/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Spam/hosts" "https://raw.githubusercontent.com/mitchellkrogza/Badd-Boyz-Hosts/master/hosts" "https://raw.githubusercontent.com/marktron/fakenews/master/fakenews"
+echo "[*] updating sb's hosts..."
+fetch_hosts "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.2o7Net/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Dead/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Risk/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Spam/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/SpotifyAds/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/UncheckyAds/hosts" "https://raw.githubusercontent.com/mitchellkrogza/Badd-Boyz-Hosts/master/hosts" "https://raw.githubusercontent.com/marktron/fakenews/master/fakenews"
 
-echo "[*] update quidsup tracking list..."
-
+echo "[*] updating quidsup tracking list..."
 fetch_domains_comments "https://raw.githubusercontent.com/quidsup/notrack/master/trackers.txt"
 
-echo "[*] update pgl's ad servers..."
-
+echo "[*] updating pgl's ad servers..."
 fetch_domains_comments "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=nohtml"
 
-domain_cleanup > $OUT_FILE
+sanitize_domain_list > $OUT_FILE
+
+remove_temporary_files
