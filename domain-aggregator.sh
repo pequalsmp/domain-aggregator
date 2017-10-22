@@ -159,8 +159,10 @@ if ! cmd_exists "cat" "curl" "date" "grep" "sed" "sort"; then
     exit 1
 fi
 
-while getopts ":o:t:w:" opt; do
+while getopts ":b:o:t:w:" opt; do
   case $opt in
+    b) BLACKLIST="$OPTARG"
+    ;;
     o) OUT_FILE="$OPTARG"
     ;;
     t) TEMP_DIR="$OPTARG"
@@ -181,6 +183,10 @@ if [ -z "$TEMP_DIR" ]; then
     TEMP_DIR="/tmp"
 fi
 
+if [ "$BLACKLIST" ]; then
+    cp "$BLACKLIST" "$TEMP_DIR/blacklist.temporary"
+fi
+
 if [ -z "$WHITELIST" ]; then
     WHITELIST="/dev/null"
 fi
@@ -194,8 +200,9 @@ fetch_domains_comments "https://ransomwaretracker.abuse.ch/downloads/RW_DOMBL.tx
 echo "[*] updating disconnect lists..."
 fetch_domains_comments "https://s3.amazonaws.com/lists.disconnect.me/simple_ad.txt" "https://s3.amazonaws.com/lists.disconnect.me/simple_malvertising.txt" "https://s3.amazonaws.com/lists.disconnect.me/simple_malware.txt" "https://s3.amazonaws.com/lists.disconnect.me/simple_tracking.txt"
 
-echo "[*] updating eladkarako ad-hosts..."
-fetch_domains_comments "https://raw.githubusercontent.com/eladkarako/hosts.eladkarako.com/master/_raw__hosts.txt"
+# CAUTION: false-positives
+#echo "[*] updating eladkarako ad-hosts..."
+#fetch_domains_comments "https://raw.githubusercontent.com/eladkarako/hosts.eladkarako.com/master/_raw__hosts.txt"
 
 # info: https://hosts-file.net/?s=classifications
 echo "[*] updating hosts-file lists..."
