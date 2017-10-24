@@ -1,21 +1,42 @@
 #!/bin/sh
 
 # Hot to run:
-# domain-aggregator -o </tmp/output.file> -t </tmp>
+# domain-aggregator -o </tmp/output.file> -t </tmp> -b </tmp/blacklist> -w </tmp/whitelist>
 
 # Description:
 # Fetch and concatenate/clean a list of potentially unwanted domains
 
-# Notes:
-# Blacklist sources: Google, Github
-
+# add user-agent as some websites refuse connection if the UA is cURL
 alias curl='curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36" -L -s'
+# force grep to work with text in order to avoid some files being treated as binaries
+alias grep='grep --text'
 
-# fetch and clean "adblock" rules, some rules
+# fetch abuse.ch ransomware tracker feed
+# and extract hosts
+fetch_abuse_ch_feed() {
+    while test $# -gt 0
+    do
+        CONTENTS=$(
+            # fetch the contents
+            curl "$1" |\
+            # remove all comments
+            grep -v "#" |\
+            # get the 4th column - host
+            awk -F "\"*,\"*" '{print $4}'
+        )
+
+        # save the contents to a temporary file
+        echo "$CONTENTS" > "$TEMP_DIR/$(($(date +%s%N)/1000000)).temporary"
+
+        shift
+    done
+}
+
+# fetch and clean "ad_block" rules, some rules
 # will be dropped as they are dependant on elements
 # or URL parts.
 # - <!!><domain><^>
-fetch_adblock_rules() {
+fetch_ad_block_rules() {
     while test $# -gt 0
     do
         CONTENTS=$(
@@ -78,12 +99,6 @@ fetch_hosts() {
             # remove all ip addresses in format:
             # - 0.0.0.0<SPACE>
             sed -e 's/0.0.0.0\x20//g'
-            # remove localhost entries
-            #grep -v "localhost" |\
-            # remove localhost.localdomain entries
-            #grep -v "localhost.localdomain" |\
-            # remove broadcasthost entries
-            #grep -v "broadcasthost"
         )
 
         # save the contents to a temporary file
@@ -192,10 +207,13 @@ if [ -z "$WHITELIST" ]; then
 fi
 
 echo "[*] updating adguard domain list..."
-fetch_adblock_rules "https://adguard.com/en/filter-rules.html?id=15"
+fetch_ad_block_rules "https://adguard.com/en/filter-rules.html?id=15"
 
 echo "[*] updating abuse.ch lists..."
 fetch_domains_comments "https://ransomwaretracker.abuse.ch/downloads/RW_DOMBL.txt" "https://zeustracker.abuse.ch/blocklist.php?download=domainblocklist" "https://feodotracker.abuse.ch/blocklist/?download=domainblocklist"
+
+echo "[*] updating abuse.ch ransomware feed lists..."
+fetch_abuse_ch_feed "https://ransomwaretracker.abuse.ch/feeds/csv/"
 
 echo "[*] updating disconnect lists..."
 fetch_domains_comments "https://s3.amazonaws.com/lists.disconnect.me/simple_ad.txt" "https://s3.amazonaws.com/lists.disconnect.me/simple_malvertising.txt" "https://s3.amazonaws.com/lists.disconnect.me/simple_malware.txt" "https://s3.amazonaws.com/lists.disconnect.me/simple_tracking.txt"
