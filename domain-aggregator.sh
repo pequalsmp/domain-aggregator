@@ -234,13 +234,22 @@ echo "[*] updating sans list..."
 fetch_domains_comments "https://isc.sans.edu/feeds/suspiciousdomains_Medium.txt"
 
 echo "[*] updating sb's hosts..."
-fetch_hosts "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.2o7Net/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Dead/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Risk/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Spam/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/SpotifyAds/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/UncheckyAds/hosts" "https://raw.githubusercontent.com/mitchellkrogza/Badd-Boyz-Hosts/master/hosts" "https://raw.githubusercontent.com/marktron/fakenews/master/fakenews"
+fetch_hosts "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.2o7Net/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Dead/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Risk/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Spam/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/SpotifyAds/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/UncheckyAds/hosts" "https://raw.githubusercontent.com/mitchellkrogza/Badd-Boyz-Hosts/master/hosts"
 
 echo "[*] updating quidsup tracking list..."
 fetch_domains_comments "https://raw.githubusercontent.com/quidsup/notrack/master/trackers.txt"
 
 echo "[*] updating pgl's ad servers..."
 fetch_domains_comments "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=nohtml"
+
+echo "[*] updating WindowsSpyBlocker's 7 telemetry list..."
+fetch_hosts "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/win7/spy.txt"
+
+echo "[*] updating WindowsSpyBlocker's 8.1 telemetry list..."
+fetch_hosts "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/win81/spy.txt"
+
+echo "[*] updating WindowsSpyBlocker's 10 telemetry list..."
+fetch_hosts "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/win10/spy.txt"
 
 sanitize_domain_list > $OUT_FILE
 
