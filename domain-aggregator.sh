@@ -229,6 +229,9 @@ fetch_hosts "https://hosts-file.net/ad_servers.txt" "https://hosts-file.net/emd.
 echo "[*] updating malwaredomains lists..."
 fetch_domains_comments "https://malwaredomains.usu.edu/justdomains"
 
+echo "[*] updating networksec list..."
+fetch_domains_comments "http://www.networksec.org/grabbho/block.txt"
+
 # info: https://isc.sans.edu/suspicious_domains.html
 echo "[*] updating sans list..."
 fetch_domains_comments "https://isc.sans.edu/feeds/suspiciousdomains_Medium.txt"
