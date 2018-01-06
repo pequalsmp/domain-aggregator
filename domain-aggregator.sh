@@ -61,6 +61,29 @@ fetch_ad_block_rules() {
     done
 }
 
+# fetch gzipped DGA feed
+# - dga_feed.gz
+fetch_dga_feed() {
+    while test $# -gt 0
+    do
+        CONTENTS=$(
+            # fetch the contents
+            curl "$1" |\
+            # inflate
+            gunzip |\
+            # grab the domains only
+            awk -F "\"*,\"*" '{print $1}' |\
+            # remove all comments
+            grep -v "#"
+        )
+
+        # save the contents to a temporary file
+        echo "$CONTENTS" > "$TEMP_DIR/$(($(date +%s%N)/1000000)).temporary"
+
+        shift
+    done
+}
+
 # fetch and clean domain lists with "#" comments, i.e.
 # - <domain> #<comment>
 # - #<comment>
@@ -169,8 +192,8 @@ cmd_exists() {
     done
 }
 
-if ! cmd_exists "cat" "curl" "date" "grep" "sed" "sort"; then
-    echo 'Missing dependency, please make sure: cat, curl, date, grep, sed and sort are installed and functional.'
+if ! cmd_exists "awk" "cat" "curl" "date" "grep" "gunzip" "sed" "sort"; then
+    echo 'Missing dependency, please make sure: awk, cat, curl, date, grep, gunzip, sed and sort are installed and functional.'
     exit 1
 fi
 
@@ -215,6 +238,12 @@ fetch_domains_comments "https://ransomwaretracker.abuse.ch/downloads/RW_DOMBL.tx
 echo "[*] updating abuse.ch ransomware feed lists..."
 fetch_abuse_ch_feed "https://ransomwaretracker.abuse.ch/feeds/csv/"
 
+echo "[*] updating coinblocker list..."
+fetch_domains_comments "https://raw.githubusercontent.com/ZeroDot1/CoinBlockerLists/master/list.txt"
+
+echo "[*] updating dga list..."
+fetch_dga_feed "https://osint.bambenekconsulting.com/feeds/dga-feed.gz"
+
 echo "[*] updating disconnect lists..."
 fetch_domains_comments "https://s3.amazonaws.com/lists.disconnect.me/simple_ad.txt" "https://s3.amazonaws.com/lists.disconnect.me/simple_malvertising.txt" "https://s3.amazonaws.com/lists.disconnect.me/simple_malware.txt" "https://s3.amazonaws.com/lists.disconnect.me/simple_tracking.txt"
 
@@ -228,6 +257,9 @@ fetch_hosts "https://hosts-file.net/ad_servers.txt" "https://hosts-file.net/emd.
 
 echo "[*] updating malwaredomains lists..."
 fetch_domains_comments "https://malwaredomains.usu.edu/justdomains"
+
+echo "[*] upading malwaredomains immortal list..."
+fetch_domains_comments "https://malwaredomains.usu.edu/immortal_domains.txt"
 
 echo "[*] updating networksec list..."
 fetch_domains_comments "http://www.networksec.org/grabbho/block.txt"
