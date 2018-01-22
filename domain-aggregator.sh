@@ -61,9 +61,30 @@ fetch_ad_block_rules() {
     done
 }
 
+# fetch csv list
+# - c2-dommasterlist.txt
+fetch_bambenek_c2() {
+    while test $# -gt 0
+    do
+        CONTENTS=$(
+            # fetch the contents
+            curl "$1" |\
+            # grab the domains only
+            awk -F "\"*,\"*" '{print $1}' |\
+            # remove all comments
+            grep -v "#"
+        )
+
+        # save the contents to a temporary file
+        echo "$CONTENTS" > "$TEMP_DIR/$(($(date +%s%N)/1000000)).temporary"
+
+        shift
+    done
+}
+
 # fetch gzipped DGA feed
 # - dga_feed.gz
-fetch_dga_feed() {
+fetch_bambenek_dga() {
     while test $# -gt 0
     do
         CONTENTS=$(
@@ -235,55 +256,60 @@ fetch_ad_block_rules "https://adguard.com/en/filter-rules.html?id=15"
 echo "[*] updating abuse.ch lists..."
 fetch_domains_comments "https://ransomwaretracker.abuse.ch/downloads/RW_DOMBL.txt" "https://zeustracker.abuse.ch/blocklist.php?download=domainblocklist" "https://feodotracker.abuse.ch/blocklist/?download=domainblocklist"
 
-echo "[*] updating abuse.ch ransomware feed lists..."
+echo "[*] updating abuse.ch ransomware feed..."
 fetch_abuse_ch_feed "https://ransomwaretracker.abuse.ch/feeds/csv/"
+
+echo "[*] updating bambenek c2 list..."
+fetch_bambenek_c2 "https://osint.bambenekconsulting.com/feeds/c2-dommasterlist.txt"
+
+echo "[*] updating bambenek dga feed..."
+fetch_bambenek_dga "https://osint.bambenekconsulting.com/feeds/dga-feed.gz"
+
+echo "[*] updating bbcan177 ms2 list..."
+fetch_domains_comments "https://gist.githubusercontent.com/BBcan177/4a8bf37c131be4803cb2/raw/"
 
 echo "[*] updating coinblocker list..."
 fetch_domains_comments "https://raw.githubusercontent.com/ZeroDot1/CoinBlockerLists/master/list.txt"
 
-echo "[*] updating dga list..."
-fetch_dga_feed "https://osint.bambenekconsulting.com/feeds/dga-feed.gz"
-
 echo "[*] updating disconnect lists..."
 fetch_domains_comments "https://s3.amazonaws.com/lists.disconnect.me/simple_ad.txt" "https://s3.amazonaws.com/lists.disconnect.me/simple_malvertising.txt" "https://s3.amazonaws.com/lists.disconnect.me/simple_malware.txt" "https://s3.amazonaws.com/lists.disconnect.me/simple_tracking.txt"
-
-# CAUTION: false-positives
-#echo "[*] updating eladkarako ad-hosts..."
-#fetch_domains_comments "https://raw.githubusercontent.com/eladkarako/hosts.eladkarako.com/master/_raw__hosts.txt"
 
 # info: https://hosts-file.net/?s=classifications
 echo "[*] updating hosts-file lists..."
 fetch_hosts "https://hosts-file.net/ad_servers.txt" "https://hosts-file.net/emd.txt" "https://hosts-file.net/exp.txt" "https://hosts-file.net/fsa.txt" "https://hosts-file.net/grm.txt" "https://hosts-file.net/hjk.txt" "https://hosts-file.net/mmt.txt" "https://hosts-file.net/pha.txt" "https://hosts-file.net/psh.txt" "https://hosts-file.net/pup.txt"
 
-echo "[*] updating malwaredomains lists..."
+echo "[*] updating malwaredomains list..."
 fetch_domains_comments "https://malwaredomains.usu.edu/justdomains"
 
 echo "[*] upading malwaredomains immortal list..."
 fetch_domains_comments "https://malwaredomains.usu.edu/immortal_domains.txt"
 
-echo "[*] updating networksec list..."
-fetch_domains_comments "http://www.networksec.org/grabbho/block.txt"
+echo "[*] updating openphish feed..."
+fetch_url_hosts "https://openphish.com/feed.txt"
 
-# info: https://isc.sans.edu/suspicious_domains.html
-echo "[*] updating sans list..."
-fetch_domains_comments "https://isc.sans.edu/feeds/suspiciousdomains_Medium.txt"
-
-echo "[*] updating sb's hosts..."
-fetch_hosts "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.2o7Net/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Dead/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Risk/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Spam/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/SpotifyAds/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/UncheckyAds/hosts" "https://raw.githubusercontent.com/mitchellkrogza/Badd-Boyz-Hosts/master/hosts"
+echo "[*] updating pgl ad servers..."
+fetch_domains_comments "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=nohtml"
 
 echo "[*] updating quidsup tracking list..."
 fetch_domains_comments "https://raw.githubusercontent.com/quidsup/notrack/master/trackers.txt"
 
-echo "[*] updating pgl's ad servers..."
-fetch_domains_comments "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=nohtml"
+# info: https://isc.sans.edu/suspicious_domains.html
+echo "[*] updating sans feed..."
+fetch_domains_comments "https://isc.sans.edu/feeds/suspiciousdomains_Medium.txt"
 
-echo "[*] updating WindowsSpyBlocker's 7 telemetry list..."
+echo "[*] updating sb lists..."
+fetch_hosts "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.2o7Net/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Dead/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Risk/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Spam/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/SpotifyAds/hosts" "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/UncheckyAds/hosts" "https://raw.githubusercontent.com/mitchellkrogza/Badd-Boyz-Hosts/master/hosts"
+
+echo "[*] updating web-to-onion list..."
+fetch_domains_comments "https://raw.githubusercontent.com/nkiszhi/NKAMG/master/server/trails/static/suspicious/onion.txt"
+
+echo "[*] updating WindowsSpyBlocker 7 telemetry list..."
 fetch_hosts "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/win7/spy.txt"
 
-echo "[*] updating WindowsSpyBlocker's 8.1 telemetry list..."
+echo "[*] updating WindowsSpyBlocker 8.1 telemetry list..."
 fetch_hosts "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/win81/spy.txt"
 
-echo "[*] updating WindowsSpyBlocker's 10 telemetry list..."
+echo "[*] updating WindowsSpyBlocker 10 telemetry list..."
 fetch_hosts "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/win10/spy.txt"
 
 sanitize_domain_list > $OUT_FILE
