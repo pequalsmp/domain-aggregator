@@ -7,7 +7,7 @@
 # Fetch and concatenate/clean a list of potentially unwanted domains
 
 # add user-agent as some websites refuse connection if the UA is cURL
-alias curl='curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36" -L -s'
+alias curl='curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0" -L -s'
 # force grep to work with text in order to avoid some files being treated as binaries
 alias grep='grep --text'
 
