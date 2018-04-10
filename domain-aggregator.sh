@@ -283,8 +283,6 @@ fetch_domains_comments \
 echo "[*] updating CHEF-KOCH lists..."
 fetch_hosts \
     "https://raw.githubusercontent.com/CHEF-KOCH/Audio-fingerprint-pages/master/AudioFp.txt" \
-    "https://raw.githubusercontent.com/CHEF-KOCH/Canvas-fingerprinting-pages/master/Canvas.txt" \
-    "https://raw.githubusercontent.com/CHEF-KOCH/Canvas-Font-Fingerprinting-pages/master/Canvas.txt" \
     "https://raw.githubusercontent.com/CHEF-KOCH/WebRTC-tracking/master/WebRTC.txt" 
 
 echo "[*] updating disconnect lists..."
