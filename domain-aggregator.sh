@@ -1,15 +1,25 @@
 #!/bin/sh
 
-# Hot to run:
-# domain-aggregator -o </tmp/output.file> -t </tmp> -b </tmp/blacklist> -w </tmp/whitelist>
-
-# Description:
-# Fetch and concatenate/clean a list of potentially unwanted domains
+# force sorting to be byte-wise
+export LC_ALL="C"
 
 # add user-agent as some websites refuse connection if the UA is cURL
 alias curl='curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0" -L -s'
 # force grep to work with text in order to avoid some files being treated as binaries
 alias grep='grep --text'
+
+# description / options for this script
+HELP_TXT="$(basename "$0") [-h] [-o /<path>] [-t /<path>] [-b /<path>] [-w /<path>]
+
+fetch and concatenate/clean a list of potentially unwanted domains
+
+options:
+    -h  show this help text
+    -o  path for the output file
+    -t  path to a directory, to be used as storage for temporary files
+        default: /tmp
+    -b  path to a list of domains to block
+    -w  path to a list of domains to whitelist"
 
 # fetch abuse.ch ransomware tracker feed
 # and extract hosts
@@ -202,7 +212,7 @@ remove_temporary_files() {
     rm -rf $TEMP_DIR/*.temporary
 }
 
-# helper - warn if something is not installed
+# helper - warn if something is missing
 cmd_exists() {
     while test $# -gt 0
     do
@@ -218,18 +228,22 @@ if ! cmd_exists "awk" "cat" "curl" "date" "grep" "gunzip" "sed" "sort"; then
     exit 1
 fi
 
-while getopts ":b:o:t:w:" opt; do
+while getopts "ho:b:t:w:" opt; do
   case $opt in
-    b) BLACKLIST="$OPTARG"
-    ;;
-    o) OUT_FILE="$OPTARG"
-    ;;
-    t) TEMP_DIR="$OPTARG"
-    ;;
-    w) WHITELIST="$OPTARG"
-    ;;
+    b)  BLOCKLIST="$OPTARG"
+        ;;
+    h)  echo "$HELP_TXT"
+        exit 1
+        ;;
+    o)  OUT_FILE="$OPTARG"
+        ;;
+    t)  TEMP_DIR="$OPTARG"
+        ;;
+    w)  WHITELIST="$OPTARG"
+        ;;
     \?) echo "Invalid option -$OPTARG" >&2
-    ;;
+        exit 1
+        ;;
   esac
 done
 
@@ -242,8 +256,8 @@ if [ -z "$TEMP_DIR" ]; then
     TEMP_DIR="/tmp"
 fi
 
-if [ "$BLACKLIST" ]; then
-    cp "$BLACKLIST" "$TEMP_DIR/blacklist.temporary"
+if [ "$BLOCKLIST" ]; then
+    cp "$BLOCKLIST" "$TEMP_DIR/blocklist.temporary"
 fi
 
 if [ -z "$WHITELIST" ]; then
