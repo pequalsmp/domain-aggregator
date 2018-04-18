@@ -30,7 +30,7 @@ fetch_abuse_ch_feed() {
             # fetch the contents
             curl "$1" |\
             # remove all comments
-            grep -v "#" |\
+            sed '/^#/ d' |\
             # get the 4th column - host
             awk -F "\"*,\"*" '{print $4}'
         )
@@ -82,7 +82,7 @@ fetch_bambenek_c2() {
             # grab the domains only
             awk -F "\"*,\"*" '{print $1}' |\
             # remove all comments
-            grep -v "#"
+            sed '/^#/ d'
         )
 
         # save the contents to a temporary file
@@ -105,7 +105,7 @@ fetch_bambenek_dga() {
             # grab the domains only
             awk -F "\"*,\"*" '{print $1}' |\
             # remove all comments
-            grep -v "#"
+            sed '/^#/ d'
         )
 
         # save the contents to a temporary file
@@ -171,6 +171,8 @@ fetch_url_hosts(){
         CONTENTS=$(
             # fetch the contents
             curl "$1" |\
+            # remove all comments
+            sed '/^#/ d' |\
             # get the entry between the 2nd and 3rd slash
             # http|https://<domain>/
             awk -F/ '{print $3}'
@@ -273,6 +275,8 @@ fetch_domains_comments \
     "https://ransomwaretracker.abuse.ch/downloads/RW_DOMBL.txt" \
     "https://zeustracker.abuse.ch/blocklist.php?download=domainblocklist" \
     "https://feodotracker.abuse.ch/blocklist/?download=domainblocklist"
+fetch_url_hosts \
+    "https://urlhaus.abuse.ch/downloads/text/"
 
 echo "[*] updating abuse.ch ransomware feed..."
 fetch_abuse_ch_feed \
