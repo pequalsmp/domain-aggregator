@@ -375,7 +375,9 @@ fetch_hosts \
 
 echo "[*] updating web-to-onion list..."
 fetch_domains_comments \
-    "https://raw.githubusercontent.com/nkiszhi/NKAMG/master/server/trails/static/suspicious/onion.txt"
+    "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/onion.txt" \
+    "https://raw.githubusercontent.com/keithmccammon/tor2web-domains/master/tor2web-domains.txt" \
+    "https://raw.githubusercontent.com/WalnutATiie/google_search/master/resourcefile/keywords_google.txt"
 
 echo "[*] updating WindowsSpyBlocker 7 telemetry list..."
 fetch_hosts \
