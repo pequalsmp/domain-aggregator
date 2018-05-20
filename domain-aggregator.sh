@@ -147,12 +147,15 @@ fetch_hosts() {
             curl "$1" |\
             # remove all comments
             grep -v "#" |\
-            # remove all ip addresses in format:
+            # remove all ipv4 addresses in format:
             # - 127.0.0.1<TAB>
             sed -e 's/127.0.0.1\x09//g' |\
-            # remove all ip addresses in format:
+            # remove all ipv4 addresses in format:
             # - 0.0.0.0<SPACE>
-            sed -e 's/0.0.0.0\x20//g'
+            sed -e 's/0.0.0.0\x20//g' |\
+            # remove all ipv6 addresses in format:
+            # - ::<SPACE>
+            sed -e 's/\:\:\x20//g'
         )
 
         # save the contents to a temporary file
@@ -341,6 +344,10 @@ fetch_domains_comments \
 echo "[*] upading malwaredomains immortal list..."
 fetch_domains_comments \
     "https://malwaredomains.usu.edu/immortal_domains.txt"
+
+echo "[*] updating notracking feed..."
+fetch_hosts \
+    "https://raw.githubusercontent.com/notracking/hosts-blocklists/master/hostnames.txt"
 
 echo "[*] updating openphish feed..."
 fetch_url_hosts \
