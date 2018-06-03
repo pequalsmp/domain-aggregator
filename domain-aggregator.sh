@@ -32,7 +32,7 @@ fetch_abuse_ch_feed() {
             # remove all comments
             sed '/^#/ d' |\
             # get the 4th column - host
-            awk -F "\"*,\"*" '{print $4}'
+            awk -F '"*,"*' '{print $4}'
         )
 
         # save the contents to a temporary file
@@ -53,15 +53,15 @@ fetch_ad_block_rules() {
             # fetch the contents
             curl "$1" |\
             # remove all comments
-            grep -v "!" |\
+            grep -v '!' |\
             # remove all exceptions
-            grep -v "@@" |\
+            grep -v '@@' |\
             # remove url arg
-            grep -v "?" |\
+            grep -v '?' |\
             # remove wildcard selectors
-            grep -v "*" |\
+            grep -v '*' |\
             # match only the beginning of an address
-            grep "||"
+            grep '||'
         )
 
         # save the contents to a temporary file
@@ -80,7 +80,7 @@ fetch_bambenek_c2() {
             # fetch the contents
             curl "$1" |\
             # grab the domains only
-            awk -F "\"*,\"*" '{print $1}' |\
+            awk -F ',' '{print $1}' |\
             # remove all comments
             sed '/^#/ d'
         )
@@ -103,7 +103,7 @@ fetch_bambenek_dga() {
             # inflate
             gunzip |\
             # grab the domains only
-            awk -F "\"*,\"*" '{print $1}' |\
+            awk -F ',' '{print $1}' |\
             # remove all comments
             sed '/^#/ d'
         )
@@ -127,7 +127,7 @@ fetch_domains_comments() {
             # remove line comments and preserve the domains
             sed -e 's/#.*$//' -e '/^$/d' |\
             # remove all comments
-            grep -v "#"
+            grep -v '#'
         )
 
         # save the contents to a temporary file
@@ -146,7 +146,7 @@ fetch_hosts() {
             # fetch the contents
             curl "$1" |\
             # remove all comments
-            grep -v "#" |\
+            grep -v '#' |\
             # remove all ipv4 addresses in format:
             # - 127.0.0.1<TAB>
             sed -e 's/127.0.0.1\x09//g' |\
@@ -156,6 +156,31 @@ fetch_hosts() {
             # remove all ipv6 addresses in format:
             # - ::<SPACE>
             sed -e 's/\:\:\x20//g'
+        )
+
+        # save the contents to a temporary file
+        echo "$CONTENTS" > "$TEMP_DIR/$(($(date +%s%N)/1000000)).temporary"
+
+        shift
+    done
+}
+
+# fetch gzipped Phishtank feed
+# - verified_online.csv.gz
+fetch_phishtank_gz() {
+    while test $# -gt 0
+    do
+        CONTENTS=$(
+            # fetch the contents
+            curl "$1" |\
+            # inflate
+            gunzip |\
+            # grab the urls
+            awk -F ',' '{print $2}' |\
+            # grab the domains
+            awk -F '/' '{print $3}' |\
+            # strip malformed urls
+            sed -e 's/\?.*$//g'
         )
 
         # save the contents to a temporary file
@@ -192,9 +217,9 @@ fetch_url_hosts(){
 sanitize_domain_list() {
     cat $TEMP_DIR/*.temporary |\
     # remove ips
-    grep -v "[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}" |\
+    grep -v '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}$' |\
     # remove invalid domain names
-    grep "\." |\
+    grep '\.' |\
     # remove the start match and separator symbols
     sed -e 's/||//g' -e 's/\^//g' |\
     # remove "dirty" urls
@@ -212,7 +237,7 @@ sanitize_domain_list() {
 }
 
 # remove the left-over temporary files
-remove_temporary_files() {
+clean_temporary_files() {
     # remove the temporary files
     rm -rf $TEMP_DIR/*.temporary
 }
@@ -349,9 +374,15 @@ echo "[*] updating notracking feed..."
 fetch_hosts \
     "https://raw.githubusercontent.com/notracking/hosts-blocklists/master/hostnames.txt"
 
+# WARNING: can cause false-positives
 echo "[*] updating openphish feed..."
 fetch_url_hosts \
     "https://openphish.com/feed.txt"
+
+# WARNING: will cause false-positives
+echo "[*] updating phishtank feed..."
+fetch_phishtank_gz \
+    "https://data.phishtank.com/data/online-valid.csv.gz"
 
 echo "[*] updating pgl ad servers..."
 fetch_domains_comments \
@@ -400,4 +431,4 @@ fetch_hosts \
 
 sanitize_domain_list > $OUT_FILE
 
-remove_temporary_files
+clean_temporary_files
