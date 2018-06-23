@@ -233,7 +233,7 @@ sanitize_domain_list() {
     # sort (and remove duplicates) entries
     sort -u |\
     # remove all white-listed domains
-    grep -Fvxf $WHITELIST
+    grep -Evf $WHITELIST
 }
 
 # remove the left-over temporary files
@@ -366,7 +366,7 @@ echo "[*] updating malwaredomains list..."
 fetch_domains_comments \
     "https://malwaredomains.usu.edu/justdomains"
 
-echo "[*] upading malwaredomains immortal list..."
+echo "[*] updating malwaredomains immortal list..."
 fetch_domains_comments \
     "https://malwaredomains.usu.edu/immortal_domains.txt"
 
