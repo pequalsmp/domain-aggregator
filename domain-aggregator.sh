@@ -218,12 +218,16 @@ sanitize_domain_list() {
     cat $TEMP_DIR/*.temporary |\
     # remove ips
     grep -v '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}$' |\
+    # remove port left-overs
+    awk -F ':' '{print $1}' |\
     # remove invalid domain names
     grep '\.' |\
     # remove the start match and separator symbols
     sed -e 's/||//g' -e 's/\^//g' |\
     # remove "dirty" urls
     sed -e 's/\///g' |\
+    # remove malformed url args
+    awk -F '?' '{print $1}' |\
     # remove space/tab from at the EoL
     sed 's/[[:blank:]]*$//' |\
     # remove empty lines
@@ -322,9 +326,9 @@ echo "[*] updating bbcan177 ms2 list..."
 fetch_domains_comments \
     "https://gist.githubusercontent.com/BBcan177/4a8bf37c131be4803cb2/raw/"
 
-echo "[*] updating coinblocker list..."
-fetch_domains_comments \
-    "https://raw.githubusercontent.com/ZeroDot1/CoinBlockerLists/master/list.txt"
+echo "[*] updating coinblocker browser list..."
+fetch_hosts \
+    "https://zerodot1.gitlab.io/CoinBlockerLists/hosts_browser"
 
 echo "[*] updating CHEF-KOCH lists..."
 fetch_hosts \
@@ -346,6 +350,7 @@ fetch_domains_comments \
     "https://v.firebog.net/hosts/Prigent-Ads.txt" \
     "https://v.firebog.net/hosts/Prigent-Malware.txt" \
     "https://v.firebog.net/hosts/Prigent-Phishing.txt" \
+    "https://v.firebog.net/hosts/Shalla-mal.txt" \
     "https://v.firebog.net/hosts/static/w3kbl.txt"
 
 # info: https://hosts-file.net/?s=classifications
@@ -388,13 +393,18 @@ echo "[*] updating pgl ad servers..."
 fetch_domains_comments \
     "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=nohtml"
 
+echo "[*] updating perflyst android list..."
+fetch_domains_comments \
+    "https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/android-tracking.txt"
+
 echo "[*] updating piwik referrer spam list..."
 fetch_domains_comments \
     "https://raw.githubusercontent.com/piwik/referrer-spam-blacklist/master/spammers.txt"
 
-echo "[*] updating quidsup tracking list..."
+echo "[*] updating quidsup lists..."
 fetch_domains_comments \
-    "https://raw.githubusercontent.com/quidsup/notrack/master/trackers.txt"
+    "https://gitlab.com/quidsup/notrack-blocklists/raw/master/notrack-blocklist.txt" \
+    "https://gitlab.com/quidsup/notrack-blocklists/raw/master/notrack-malware.txt"
 
 # info: https://isc.sans.edu/suspicious_domains.html
 echo "[*] updating sans feed..."
@@ -417,17 +427,9 @@ fetch_domains_comments \
     "https://raw.githubusercontent.com/keithmccammon/tor2web-domains/master/tor2web-domains.txt" \
     "https://raw.githubusercontent.com/WalnutATiie/google_search/master/resourcefile/keywords_google.txt"
 
-echo "[*] updating WindowsSpyBlocker 7 telemetry list..."
+echo "[*] updating WindowsSpyBlocker list..."
 fetch_hosts \
-    "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/win7/spy.txt"
-
-echo "[*] updating WindowsSpyBlocker 8.1 telemetry list..."
-fetch_hosts \
-    "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/win81/spy.txt"
-
-echo "[*] updating WindowsSpyBlocker 10 telemetry list..."
-fetch_hosts \
-    "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/win10/spy.txt"
+    "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/spy.txt"
 
 sanitize_domain_list > $OUT_FILE
 
