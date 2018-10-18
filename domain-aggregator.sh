@@ -330,11 +330,6 @@ echo "[*] updating coinblocker browser list..."
 fetch_hosts \
     "https://zerodot1.gitlab.io/CoinBlockerLists/hosts_browser"
 
-echo "[*] updating CHEF-KOCH lists..."
-fetch_hosts \
-    "https://raw.githubusercontent.com/CHEF-KOCH/Audio-fingerprint-pages/master/AudioFp.txt" \
-    "https://raw.githubusercontent.com/CHEF-KOCH/WebRTC-tracking/master/WebRTC.txt" 
-
 echo "[*] updating disconnect lists..."
 fetch_domains_comments \
     "https://s3.amazonaws.com/lists.disconnect.me/simple_ad.txt" \

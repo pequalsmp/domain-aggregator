@@ -1,12 +1,12 @@
 Intro
 -
 
-This is a simple shell script, utilizing `coreutils` to aggregate domain blocklists from various sources.
+This is a simple shell script, utilizing a subset of `coreutils` to aggregate domain blocklists from various sources.
 
 Why Shell
 -
 
-The tools used here are readily available, simple to use and they actually get the job done. The main objective was to have a portable script, working with what's already present.
+The tools used here are readily available and simple to use. The main objective of this project is to have a portable script, working with what's (most probably), already available.
 
 Setup
 -
@@ -18,7 +18,7 @@ _Optional_: drop a script (in `/etc/cron.daily`), executing `domain-aggregator.s
 Usage
 -
 
-```sh
+```
 domain-aggregator.sh [-h] [-o /<path>] [-t /<path>] [-b /<path>] [-w /<path>]
 
 fetch and concatenate/clean a list of potentially unwanted domains
@@ -65,7 +65,7 @@ into
 Recommendations
 -
 
-- Check your sources, a lot of sources put random domains and do not verify the content resulting in a lot of false-positives
-- Use a RAM-disk (`tmpfs`) to `temporary` files, when using flash storage
+- Check your sources. Sources may put unverified domains in their lists, resulting in false-positives (even for popular websites like Dropbox, Instagram, etc.).
+- Use a RAM-disk (`tmpfs`) to store `temporary` files when using flash storage.
 - Make sure your filtering application can handle large lists. The default setup generates a blocklists with more than a million domains.
-- Its a good idea to white-list all the domains associated with fetching blocklists as some sources may blocklists other sources.
+- Its a good idea to white-list all the domains associated with fetching blocklists, as some of the sources may block websites hosting other sources.
