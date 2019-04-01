@@ -248,10 +248,10 @@ fetch_url_hosts(){
 # clean up/format the domain list for final version
 sanitize_domain_list() {
     cat $TEMP_DIR/*.temporary |\
-    # remove ips
-    grep -v '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}$' |\
     # remove port left-overs
     awk -F ':' '{print $1}' |\
+    # remove ips
+    grep -v '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}$' |\
     # remove invalid domain names
     grep '\.' |\
     # remove the start match and separator symbols
@@ -338,12 +338,16 @@ fetch_ad_block_rules \
 
 echo "[*] updating abuse.ch lists..."
 fetch_domains_comments \
-    "https://ransomwaretracker.abuse.ch/downloads/RW_DOMBL.txt" \
     "https://zeustracker.abuse.ch/blocklist.php?download=domainblocklist"
 fetch_url_hosts \
+    "https://zeustracker.abuse.ch/blocklist.php?download=compromised" \
     "https://urlhaus.abuse.ch/downloads/text/"
 
 echo "[*] updating abuse.ch ransomware feed..."
+fetch_domains_comments \
+    "https://ransomwaretracker.abuse.ch/downloads/CW_C2_DOMBL.txt" \
+    "https://ransomwaretracker.abuse.ch/downloads/RW_DOMBL.txt" \
+    "https://ransomwaretracker.abuse.ch/downloads/TC_C2_DOMBL.txt"
 fetch_abuse_ch_feed \
     "https://ransomwaretracker.abuse.ch/feeds/csv/"
 
@@ -367,7 +371,11 @@ echo "[*] updating coinblocker browser list..."
 fetch_domains_comments \
     "https://zerodot1.gitlab.io/CoinBlockerLists/list.txt"
 
-echo "[*] updating cybercrime lists..."
+echo "[*] updating crazy-max windows list..."
+fetch_hosts \
+    "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/spy.txt"
+
+echo "[*] updating cybercrime-tracker lists..."
 fetch_url_hosts \
     "https://cybercrime-tracker.net/all.php" \
     "https://cybercrime-tracker.net/ccamgate.php"
@@ -378,6 +386,15 @@ fetch_domains_comments \
     "https://s3.amazonaws.com/lists.disconnect.me/simple_malvertising.txt" \
     "https://s3.amazonaws.com/lists.disconnect.me/simple_malware.txt" \
     "https://s3.amazonaws.com/lists.disconnect.me/simple_tracking.txt"
+
+echo "[*] updating fademind lists..."
+fetch_hosts \
+    "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.2o7Net/hosts" \
+    "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Dead/hosts" \
+    "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Risk/hosts" \
+    "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Spam/hosts" \
+    "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/StreamingAds/hosts" \
+    "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/UncheckyAds/hosts"
 
 echo "[*] updating firebog lists..."
 fetch_domains_comments \
@@ -417,6 +434,10 @@ echo "[*] updating malwaredomains immortal list..."
 fetch_domains_comments \
     "https://malwaredomains.usu.edu/immortal_domains.txt"
 
+echo "[*] updating mitchellkrogza list..."
+fetch_hosts \
+    "https://raw.githubusercontent.com/mitchellkrogza/Badd-Boyz-Hosts/master/hosts"
+
 echo "[*] updating notracking feed..."
 fetch_hosts \
     "https://raw.githubusercontent.com/notracking/hosts-blocklists/master/hostnames.txt"
@@ -425,6 +446,10 @@ fetch_hosts \
 echo "[*] updating openphish feed..."
 fetch_url_hosts \
     "https://openphish.com/feed.txt"
+
+echo "[*] updating phishing army list..."
+fetch_domains_comments \
+    "https://phishing.army/download/phishing_army_blocklist_extended.txt"
 
 # WARNING: will cause false-positives
 echo "[*] updating phishtank feed..."
@@ -439,10 +464,6 @@ echo "[*] updating perflyst android list..."
 fetch_domains_comments \
     "https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/android-tracking.txt"
 
-echo "[*] updating phishing army list..."
-fetch_domains_comments \
-    "https://phishing.army/download/phishing_army_blocklist_extended.txt"
-
 echo "[*] updating piwik referrer spam list..."
 fetch_domains_comments \
     "https://raw.githubusercontent.com/piwik/referrer-spam-blacklist/master/spammers.txt"
@@ -456,16 +477,6 @@ fetch_domains_comments \
 echo "[*] updating sans feed..."
 fetch_domains_comments \
     "https://isc.sans.edu/feeds/suspiciousdomains_Medium.txt"
-
-echo "[*] updating sb lists..."
-fetch_hosts \
-    "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.2o7Net/hosts" \
-    "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Dead/hosts" \
-    "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Risk/hosts" \
-    "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Spam/hosts" \
-    "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/SpotifyAds/hosts" \
-    "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/UncheckyAds/hosts" \
-    "https://raw.githubusercontent.com/mitchellkrogza/Badd-Boyz-Hosts/master/hosts"
 
 echo "[*] updating squidblacklist lists..."
 fetch_domains_comments \
@@ -483,9 +494,9 @@ fetch_domains_comments \
     "https://raw.githubusercontent.com/keithmccammon/tor2web-domains/master/tor2web-domains.txt" \
     "https://raw.githubusercontent.com/WalnutATiie/google_search/master/resourcefile/keywords_google.txt"
 
-echo "[*] updating WindowsSpyBlocker list..."
+echo "[*] updating yhonay antipopads list..."
 fetch_hosts \
-    "https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/spy.txt"
+    "https://raw.githubusercontent.com/Yhonay/antipopads/master/hosts"
 
 sanitize_domain_list > $OUT_FILE
 
