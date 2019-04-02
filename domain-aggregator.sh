@@ -26,30 +26,6 @@ options:
     -b  path to a list of domains to block
     -w  path to a list of domains to whitelist"
 
-# fetch abuse.ch ransomware tracker feed
-# and extract hosts
-fetch_abuse_ch_feed() {
-    while test $# -gt 0
-    do
-        TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
-        
-        curl -o $TARGET -z $TARGET -k "$1"
-
-        CONTENTS=$(
-            # fetch the contents
-            cat "$TARGET" |\
-            # remove all comments
-            sed '/^#/ d' |\
-            # get the 4th column - host
-            awk -F '"*,"*' '{print $4}'
-        )
-
-        # save the contents to a temporary file
-        echo "$CONTENTS" > "$TEMP_DIR/$(($(date +%s%N)/1000000)).temporary"
-
-        shift
-    done
-}
 
 # fetch and clean "ad_block" rules, some rules
 # will be dropped as they are dependant on elements
@@ -63,7 +39,6 @@ fetch_ad_block_rules() {
         curl -o $TARGET -z $TARGET -k "$1"
 
         CONTENTS=$(
-            # fetch the contents
             cat "$TARGET" |\
             # remove all comments
             grep -v '!' |\
@@ -84,6 +59,53 @@ fetch_ad_block_rules() {
     done
 }
 
+# fetch abuse.ch ransomware tracker feed
+# and extract hosts
+fetch_abuse_ch_feed() {
+    while test $# -gt 0
+    do
+        TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
+        
+        curl -o $TARGET -z $TARGET -k "$1"
+
+        CONTENTS=$(
+            cat "$TARGET" |\
+            # remove all comments
+            sed '/^#/ d' |\
+            # get the 4th column - host
+            awk -F '"*,"*' '{print $4}'
+        )
+
+        # save the contents to a temporary file
+        echo "$CONTENTS" > "$TEMP_DIR/$(($(date +%s%N)/1000000)).temporary"
+
+        shift
+    done
+}
+
+# fetch and get the domains
+# - /feed
+fetch_ayashige_feed() {
+    while test $# -gt 0
+    do
+        TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
+        
+        curl -o $TARGET -z $TARGET -k "$1"
+
+        CONTENTS=$(
+            cat "$TARGET" |\
+            # use jq to grab all domains
+            jq -r '.[].domain'
+        )
+
+        # save the contents to a temporary file
+        echo "$CONTENTS" > "$TEMP_DIR/$(($(date +%s%N)/1000000)).temporary"
+
+        shift
+    done
+}
+
+
 # fetch csv list
 # - c2-dommasterlist.txt
 fetch_bambenek_c2() {
@@ -94,7 +116,6 @@ fetch_bambenek_c2() {
         curl -o $TARGET -z $TARGET -k "$1"
 
         CONTENTS=$(
-            # fetch the contents
             cat "$TARGET" |\
             # grab the domains only
             awk -F ',' '{print $1}' |\
@@ -134,6 +155,38 @@ fetch_bambenek_dga() {
     done
 }
 
+# fetch and filter the JSON feed
+# - disconnect-plaintext.json
+fetch_disconnect_feed() {
+    while test $# -gt 0
+    do
+        TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
+        
+        curl -o $TARGET -z $TARGET -k "$1"
+
+        CONTENTS=$(
+            cat "$TARGET" |\
+            # use only the categories
+            jq '.categories' |\
+            # select the specific categories
+            jq 'with_entries(select([.key] | inside(["Advertising", "Analytics", "Cryptomining", "Fingerprinting"])))' |\
+            # iterate through the nested levels
+            jq '.[][][]' |\
+            # remove specific keys
+            jq 'del(.performance)' |\
+            jq 'del(."session-replay")' |\
+            # iterate through the objects and
+            # print the result in plain-text
+            jq  -r '.[][]'
+        )
+
+        # save the contents to a temporary file
+        echo "$CONTENTS" > "$TEMP_DIR/$(($(date +%s%N)/1000000)).temporary"
+
+        shift
+    done
+}
+
 # fetch and clean domain lists with "#" comments, i.e.
 # - <domain> #<comment>
 # - #<comment>
@@ -145,7 +198,6 @@ fetch_domains_comments() {
         curl -o $TARGET -z $TARGET -k "$1"
 
         CONTENTS=$(
-            # fetch the contents
             cat "$TARGET" |\
             # remove line comments and preserve the domains
             sed -e 's/#.*$//' -e '/^$/d' |\
@@ -170,7 +222,6 @@ fetch_hosts() {
         curl -o $TARGET -z $TARGET -k "$1"
 
         CONTENTS=$(
-            # fetch the contents
             cat "$TARGET" |\
             # remove all comments
             grep -v '#' |\
@@ -230,7 +281,6 @@ fetch_url_hosts(){
         curl -o $TARGET -z $TARGET -k "$1"
 
         CONTENTS=$(
-            # fetch the contents
             cat "$TARGET" |\
             # remove all comments
             sed '/^#/ d' |\
@@ -289,8 +339,8 @@ cmd_exists() {
     done
 }
 
-if ! cmd_exists "awk" "cat" "curl" "cut" "date" "grep" "gzip" "md5sum" "mkdir" "readlink" "sed" "sort" "rm"; then
-    echo 'Missing dependency, please make sure: awk, cat, curl, cut, date, echo, grep, gzip, md5sum, mkdir, readlink, sed, sort and rm are installed and functional.'
+if ! cmd_exists "awk" "cat" "curl" "cut" "date" "grep" "gzip" "jq" "md5sum" "mkdir" "readlink" "sed" "sort" "rm"; then
+    echo 'Missing dependency! Please make sure: awk, coreutils, curl, grep, gzip, jq and sed are installed and functional.'
     exit 1
 fi
 
@@ -355,6 +405,10 @@ echo "[*] updating anudeepnd list..."
 fetch_hosts \
     "https://raw.githubusercontent.com/anudeepND/blacklist/master/adservers.txt"
 
+echo "[*] updating ayashige feed..."
+fetch_ayashige_feed \
+    "https://ayashige.herokuapp.com/feed"
+
 echo "[*] updating bambenek c2 list..."
 fetch_bambenek_c2 \
     "https://osint.bambenekconsulting.com/feeds/c2-dommasterlist.txt"
@@ -380,12 +434,9 @@ fetch_url_hosts \
     "https://cybercrime-tracker.net/all.php" \
     "https://cybercrime-tracker.net/ccamgate.php"
 
-echo "[*] updating disconnect lists..."
-fetch_domains_comments \
-    "https://s3.amazonaws.com/lists.disconnect.me/simple_ad.txt" \
-    "https://s3.amazonaws.com/lists.disconnect.me/simple_malvertising.txt" \
-    "https://s3.amazonaws.com/lists.disconnect.me/simple_malware.txt" \
-    "https://s3.amazonaws.com/lists.disconnect.me/simple_tracking.txt"
+echo "[*] updating disconnect feed..."
+fetch_disconnect_feed \
+    "https://services.disconnect.me/disconnect-plaintext.json"
 
 echo "[*] updating fademind lists..."
 fetch_hosts \
