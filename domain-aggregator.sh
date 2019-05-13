@@ -35,7 +35,9 @@ fetch_ad_block_rules() {
     while test $# -gt 0
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
-        
+
+        echo " -- $1 - $TARGET"
+     
         curl -o $TARGET -z $TARGET -k "$1"
 
         CONTENTS=$(
@@ -65,7 +67,9 @@ fetch_abuse_ch_feed() {
     while test $# -gt 0
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
-        
+
+        echo " -- $1 - $TARGET"
+
         curl -o $TARGET -z $TARGET -k "$1"
 
         CONTENTS=$(
@@ -89,7 +93,9 @@ fetch_ayashige_feed() {
     while test $# -gt 0
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
-        
+
+        echo " -- $1 - $TARGET"
+
         curl -o $TARGET -z $TARGET -k "$1"
 
         CONTENTS=$(
@@ -112,7 +118,9 @@ fetch_bambenek_c2() {
     while test $# -gt 0
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
-        
+
+        echo " -- $1 - $TARGET"
+
         curl -o $TARGET -z $TARGET -k "$1"
 
         CONTENTS=$(
@@ -136,7 +144,9 @@ fetch_bambenek_dga() {
     while test $# -gt 0
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
-        
+
+        echo " -- $1 - $TARGET"
+
         curl -o $TARGET -z $TARGET -k "$1"
 
         CONTENTS=$(
@@ -155,38 +165,6 @@ fetch_bambenek_dga() {
     done
 }
 
-# fetch and filter the JSON feed
-# - disconnect-plaintext.json
-fetch_disconnect_feed() {
-    while test $# -gt 0
-    do
-        TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
-        
-        curl -o $TARGET -z $TARGET -k "$1"
-
-        CONTENTS=$(
-            cat "$TARGET" |\
-            # use only the categories
-            jq '.categories' |\
-            # select the specific categories
-            jq 'with_entries(select([.key] | inside(["Advertising", "Analytics", "Cryptomining", "Fingerprinting"])))' |\
-            # iterate through the nested levels
-            jq '.[][][]' |\
-            # remove specific keys
-            jq 'del(.performance)' |\
-            jq 'del(."session-replay")' |\
-            # iterate through the objects and
-            # print the result in plain-text
-            jq  -r '.[][]'
-        )
-
-        # save the contents to a temporary file
-        echo "$CONTENTS" > "$TEMP_DIR/$(($(date +%s%N)/1000000)).temporary"
-
-        shift
-    done
-}
-
 # fetch and clean domain lists with "#" comments, i.e.
 # - <domain> #<comment>
 # - #<comment>
@@ -194,7 +172,9 @@ fetch_domains_comments() {
     while test $# -gt 0
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
-        
+
+        echo " -- $1 - $TARGET"
+
         curl -o $TARGET -z $TARGET -k "$1"
 
         CONTENTS=$(
@@ -218,7 +198,9 @@ fetch_hosts() {
     while test $# -gt 0
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
-        
+
+        echo " -- $1 - $TARGET"
+
         curl -o $TARGET -z $TARGET -k "$1"
 
         CONTENTS=$(
@@ -250,6 +232,8 @@ fetch_phishtank_gz() {
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
 
+        echo " -- $1 - $TARGET"
+
         curl -o $TARGET -z $TARGET -k "$1"
         
         CONTENTS=$(
@@ -277,7 +261,9 @@ fetch_url_hosts(){
     while test $# -gt 0
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
-        
+
+        echo " -- $1 - $TARGET"
+
         curl -o $TARGET -z $TARGET -k "$1"
 
         CONTENTS=$(
@@ -316,6 +302,11 @@ sanitize_domain_list() {
     sed '/^$/d' |\
     # convert <CRLF> to <LF>
     sed 's/\x0d//' |\
+    # lowercase everything
+    awk '{print tolower($0)}' |\
+    # filter invalid domains
+    # WARNING: really slow
+    #xargs -L1 idn |\
     # sort (and remove duplicates) entries
     sort -u |\
     # remove all white-listed domains
@@ -421,6 +412,15 @@ echo "[*] updating bbcan177 ms2 list..."
 fetch_domains_comments \
     "https://gist.githubusercontent.com/BBcan177/4a8bf37c131be4803cb2/raw/"
 
+echo "[*] updating botvrij ioc lists..."
+fetch_domains_comments \
+    "https://www.botvrij.eu/data/ioclist.domain" \
+    "https://www.botvrij.eu/data/ioclist.hostname"
+
+echo "[*] updating cert-pa infosec list..."
+fetch_domains_comments \
+    "https://infosec.cert-pa.it/analyze/listdomains.txt"
+
 echo "[*] updating coinblocker browser list..."
 fetch_domains_comments \
     "https://zerodot1.gitlab.io/CoinBlockerLists/list.txt"
@@ -433,10 +433,6 @@ echo "[*] updating cybercrime-tracker lists..."
 fetch_url_hosts \
     "https://cybercrime-tracker.net/all.php" \
     "https://cybercrime-tracker.net/ccamgate.php"
-
-echo "[*] updating disconnect feed..."
-fetch_disconnect_feed \
-    "https://services.disconnect.me/disconnect-plaintext.json"
 
 echo "[*] updating fademind lists..."
 fetch_hosts \
