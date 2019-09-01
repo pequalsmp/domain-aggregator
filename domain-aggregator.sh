@@ -36,7 +36,7 @@ fetch_ad_block_rules() {
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
 
-        echo " -- $1 - $TARGET"
+        echo " -- $TARGET - $1"
      
         curl -o $TARGET -z $TARGET -k "$1"
 
@@ -68,7 +68,7 @@ fetch_abuse_ch_feed() {
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
 
-        echo " -- $1 - $TARGET"
+        echo " -- $TARGET - $1"
 
         curl -o $TARGET -z $TARGET -k "$1"
 
@@ -94,7 +94,7 @@ fetch_ayashige_feed() {
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
 
-        echo " -- $1 - $TARGET"
+        echo " -- $TARGET - $1"
 
         curl -o $TARGET -z $TARGET -k "$1"
 
@@ -119,7 +119,7 @@ fetch_bambenek_c2() {
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
 
-        echo " -- $1 - $TARGET"
+        echo " -- $TARGET - $1"
 
         curl -o $TARGET -z $TARGET -k "$1"
 
@@ -145,7 +145,7 @@ fetch_bambenek_dga() {
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
 
-        echo " -- $1 - $TARGET"
+        echo " -- $TARGET - $1"
 
         curl -o $TARGET -z $TARGET -k "$1"
 
@@ -173,7 +173,7 @@ fetch_domains_comments() {
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
 
-        echo " -- $1 - $TARGET"
+        echo " -- $TARGET - $1"
 
         curl -o $TARGET -z $TARGET -k "$1"
 
@@ -199,7 +199,7 @@ fetch_hosts() {
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
 
-        echo " -- $1 - $TARGET"
+        echo " -- $TARGET - $1"
 
         curl -o $TARGET -z $TARGET -k "$1"
 
@@ -232,7 +232,7 @@ fetch_phishtank_gz() {
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
 
-        echo " -- $1 - $TARGET"
+        echo " -- $TARGET - $1"
 
         curl -o $TARGET -z $TARGET -k "$1"
         
@@ -262,7 +262,7 @@ fetch_url_hosts(){
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
 
-        echo " -- $1 - $TARGET"
+        echo " -- $TARGET - $1"
 
         curl -o $TARGET -z $TARGET -k "$1"
 
@@ -377,20 +377,17 @@ echo "[*] updating adguard domain list..."
 fetch_ad_block_rules \
     "https://adguard.com/en/filter-rules.html?id=15"
 
-echo "[*] updating abuse.ch lists..."
-fetch_domains_comments \
-    "https://zeustracker.abuse.ch/blocklist.php?download=domainblocklist"
-fetch_url_hosts \
-    "https://zeustracker.abuse.ch/blocklist.php?download=compromised" \
-    "https://urlhaus.abuse.ch/downloads/text/"
-
-echo "[*] updating abuse.ch ransomware feed..."
+echo "[*] updating abuse.ch ransomware lists..."
 fetch_domains_comments \
     "https://ransomwaretracker.abuse.ch/downloads/CW_C2_DOMBL.txt" \
     "https://ransomwaretracker.abuse.ch/downloads/RW_DOMBL.txt" \
     "https://ransomwaretracker.abuse.ch/downloads/TC_C2_DOMBL.txt"
 fetch_abuse_ch_feed \
     "https://ransomwaretracker.abuse.ch/feeds/csv/"
+
+echo "[*] updating abuse.ch urlhaus list..."
+fetch_url_hosts \
+    "https://urlhaus.abuse.ch/downloads/text/"
 
 echo "[*] updating anudeepnd list..."
 fetch_hosts \
