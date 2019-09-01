@@ -380,8 +380,10 @@ fetch_ad_block_rules \
 echo "[*] updating abuse.ch ransomware lists..."
 fetch_domains_comments \
     "https://ransomwaretracker.abuse.ch/downloads/CW_C2_DOMBL.txt" \
-    "https://ransomwaretracker.abuse.ch/downloads/RW_DOMBL.txt" \
-    "https://ransomwaretracker.abuse.ch/downloads/TC_C2_DOMBL.txt"
+    "https://ransomwaretracker.abuse.ch/downloads/LY_C2_DOMBL.txt" \
+    "https://ransomwaretracker.abuse.ch/downloads/TC_C2_DOMBL.txt" \
+    "https://ransomwaretracker.abuse.ch/downloads/TL_C2_DOMBL.txt" \
+    "https://ransomwaretracker.abuse.ch/downloads/RW_DOMBL.txt"
 fetch_abuse_ch_feed \
     "https://ransomwaretracker.abuse.ch/feeds/csv/"
 
@@ -504,9 +506,10 @@ echo "[*] updating pgl ad servers..."
 fetch_domains_comments \
     "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=nohtml"
 
-echo "[*] updating perflyst android list..."
+echo "[*] updating perflyst lists..."
 fetch_domains_comments \
-    "https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/android-tracking.txt"
+    "https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/android-tracking.txt" \
+    "https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/SmartTV.txt"
 
 echo "[*] updating piwik referrer spam list..."
 fetch_domains_comments \
