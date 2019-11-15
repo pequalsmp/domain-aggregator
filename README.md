@@ -1,7 +1,7 @@
 Intro
 -
 
-This is a simple shell script, utilizing a subset of `coreutils`, `awk`, `curl`, `gzip`, `jq` and `sed` to aggregate domain blocklists from various sources.
+This is a simple shell script, utilizing a subset of `coreutils`, `awk`, `curl`, `gzip`, `jq`, `python3` and `sed` to aggregate domain blocklists from various sources.
 
 Why Shell
 -

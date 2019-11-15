@@ -9,7 +9,7 @@ export LC_ALL="C"
 # use compression (when available/possible)
 # don't use keepalive (there's not reason for it, as we're closing the connection as soon as we download the file)
 # retry 5 times with 30s delay inbetween
-alias curl='curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36" -L -s --compressed --no-keepalive --retry 5 --retry-delay 30'
+alias curl='curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" -L -s --compressed --no-keepalive --retry 3 --retry-delay 30'
 # force grep to work with text in order to avoid some files being treated as binaries
 alias grep='grep --text'
 
