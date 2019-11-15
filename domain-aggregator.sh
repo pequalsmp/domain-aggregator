@@ -281,31 +281,39 @@ fetch_url_hosts(){
     done
 }
 
+python_idna_encoder() {
+    python3 -c "
+import sys;
+
+for line in sys.stdin:
+    try:
+        print(line.strip().encode('idna').decode('ascii'))
+    except:
+        pass
+"
+}
+
 # clean up/format the domain list for final version
 sanitize_domain_list() {
     cat $TEMP_DIR/*.temporary |\
     # remove port left-overs
     awk -F ':' '{print $1}' |\
+    # remove "dirty" urls
+    awk -F '/' '{print $1}' |\
+    # remove malformed url args
+    awk -F '?' '{print $1}' |\
     # remove ips
     grep -v '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}$' |\
     # remove invalid domain names
     grep '\.' |\
     # remove the start match and separator symbols
     sed -e 's/||//g' -e 's/\^//g' |\
-    # remove "dirty" urls
-    sed -e 's/\///g' |\
-    # remove malformed url args
-    awk -F '?' '{print $1}' |\
-    # remove space/tab from at the EoL
-    sed 's/[[:blank:]]*$//' |\
-    # remove empty lines
-    sed '/^$/d' |\
-    # convert <CRLF> to <LF>
-    sed 's/\x0d//' |\
     # lowercase everything
     awk '{print tolower($0)}' |\
-    # filter invalid domains
-    # WARNING: really slow
+    # filter out sanitize domains according to IDNA RFC
+    python_idna_encoder |\
+    # or you can use libidn, though
+    # WARNING: slow
     #xargs -L1 idn |\
     # sort (and remove duplicates) entries
     sort -u |\
@@ -330,8 +338,8 @@ cmd_exists() {
     done
 }
 
-if ! cmd_exists "awk" "cat" "curl" "cut" "date" "grep" "gzip" "jq" "md5sum" "mkdir" "readlink" "sed" "sort" "rm"; then
-    echo 'Missing dependency! Please make sure: awk, coreutils, curl, grep, gzip, jq and sed are installed and functional.'
+if ! cmd_exists "awk" "cat" "curl" "cut" "date" "grep" "gzip" "jq" "md5sum" "mkdir" "python3" "readlink" "sed" "sort" "rm"; then
+    echo 'Missing dependency! Please make sure: awk, coreutils, curl, grep, gzip, jq, python3 and sed are installed and functional.'
     exit 1
 fi
 
@@ -433,6 +441,10 @@ fetch_url_hosts \
     "https://cybercrime-tracker.net/all.php" \
     "https://cybercrime-tracker.net/ccamgate.php"
 
+echo "[*] updating energized regional list..."
+fetch_domains_comments \
+    "https://block.energized.pro/extensions/regional/formats/domains.txt"
+
 echo "[*] updating fademind lists..."
 fetch_hosts \
     "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.2o7Net/hosts" \
@@ -453,11 +465,6 @@ fetch_domains_comments \
     "https://v.firebog.net/hosts/Shalla-mal.txt" \
     "https://v.firebog.net/hosts/static/w3kbl.txt"
 
-# WARNING: the list contains parsing fragments
-echo "[*] updating horus phishing list..."
-fetch_domains_comments \
-    "https://raw.githubusercontent.com/HorusTeknoloji/TR-PhishingList/master/url-lists.txt"
-
 # info: https://hosts-file.net/?s=classifications
 echo "[*] updating hosts-file lists..."
 fetch_hosts \
@@ -471,6 +478,10 @@ fetch_hosts \
     "https://hosts-file.net/pha.txt" \
     "https://hosts-file.net/psh.txt" \
     "https://hosts-file.net/pup.txt"
+
+echo "[*] updating jawz101 mobile list..."
+fetch_hosts \
+    "https://raw.githubusercontent.com/jawz101/MobileAdTrackers/master/hosts"
 
 echo "[*] updating malwaredomains list..."
 fetch_domains_comments \
@@ -508,6 +519,7 @@ fetch_domains_comments \
 
 echo "[*] updating perflyst lists..."
 fetch_domains_comments \
+    "https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/AmazonFireTV.txt" \
     "https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/android-tracking.txt" \
     "https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/SmartTV.txt"
 
@@ -530,14 +542,23 @@ fetch_domains_comments \
     "https://www.squidblacklist.org/downloads/dg-ads.acl" \
     "https://www.squidblacklist.org/downloads/dg-malicious.acl"
 
+echo "[*] updating stamparm lists..."
+fetch_domains_comments \
+    "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/anonymous_web_proxy.txt" \
+    "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/bad_wpad.txt" \
+    "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/computrace.txt" \
+    "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/domain.txt" \
+    "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/dynamic_domain.txt" \
+    "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/onion.txt" \
+    "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/pua.txt"
+
 # WARNING: THIS IS BEING TRANSMITTED OVER HTTP
 echo "[*] updating vxvault list..."
 fetch_url_hosts \
     "http://vxvault.net/URL_List.php"
 
-echo "[*] updating web-to-onion lists..."
+echo "[*] updating various web-to-onion lists..."
 fetch_domains_comments \
-    "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/onion.txt" \
     "https://raw.githubusercontent.com/keithmccammon/tor2web-domains/master/tor2web-domains.txt" \
     "https://raw.githubusercontent.com/WalnutATiie/google_search/master/resourcefile/keywords_google.txt"
 
