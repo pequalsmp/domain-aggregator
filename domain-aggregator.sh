@@ -3,13 +3,21 @@
 # force sorting to be byte-wise
 export LC_ALL="C"
 
-# add user-agent as some websites refuse connection if the UA is cURL
+# cURL setup
+#
+# use compression
+# - DISABLE if you encounter unsupported encoding algorithm
 # follow redirects
-# don't print out anything (silent)
-# use compression (when available/possible)
-# don't use keepalive (there's not reason for it, as we're closing the connection as soon as we download the file)
+# don't use keepalive 
+# - there's not reason for it, we're closing the connection as soon
+# - as we download the file
+# try to guess the timestamp of the remote file
 # retry 5 times with 30s delay inbetween
-alias curl='curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36" -L -s --compressed --no-keepalive --retry 3 --retry-delay 30'
+# don't print out anything (silent)
+# add user-agent
+# - some websites refuse the connection if the UA is cURL
+alias curl='curl --compressed --location --no-keepalive --remote-time --retry 3 --retry-delay 30 --silent --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"'
+
 # force grep to work with text in order to avoid some files being treated as binaries
 alias grep='grep --text'
 
@@ -37,47 +45,20 @@ fetch_ad_block_rules() {
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
 
         echo " -- $TARGET - $1"
-     
-        curl -o $TARGET -z $TARGET -k "$1"
+
+        curl -o "$TARGET" -z "$TARGET" -k "$1"
 
         CONTENTS=$(
-            cat "$TARGET" |\
             # remove all comments
-            grep -v '!' |\
+            grep -v -F '!' < "$TARGET" |\
             # remove all exceptions
-            grep -v '@@' |\
+            grep -v -F '@@' |\
             # remove url arg
-            grep -v '?' |\
+            grep -v -F '?' |\
             # remove wildcard selectors
-            grep -v '*' |\
+            grep -v -F '*' |\
             # match only the beginning of an address
             grep '||'
-        )
-
-        # save the contents to a temporary file
-        echo "$CONTENTS" > "$TEMP_DIR/$(($(date +%s%N)/1000000)).temporary"
-
-        shift
-    done
-}
-
-# fetch abuse.ch ransomware tracker feed
-# and extract hosts
-fetch_abuse_ch_feed() {
-    while test $# -gt 0
-    do
-        TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
-
-        echo " -- $TARGET - $1"
-
-        curl -o $TARGET -z $TARGET -k "$1"
-
-        CONTENTS=$(
-            cat "$TARGET" |\
-            # remove all comments
-            sed '/^#/ d' |\
-            # get the 4th column - host
-            awk -F '"*,"*' '{print $4}'
         )
 
         # save the contents to a temporary file
@@ -96,12 +77,11 @@ fetch_ayashige_feed() {
 
         echo " -- $TARGET - $1"
 
-        curl -o $TARGET -z $TARGET -k "$1"
+        curl -o "$TARGET" -z "$TARGET" -k "$1"
 
         CONTENTS=$(
-            cat "$TARGET" |\
             # use jq to grab all domains
-            jq -r '.[].domain'
+            jq -r '.[].domain' < "$TARGET"
         )
 
         # save the contents to a temporary file
@@ -121,12 +101,11 @@ fetch_bambenek_c2() {
 
         echo " -- $TARGET - $1"
 
-        curl -o $TARGET -z $TARGET -k "$1"
+        curl -o "$TARGET" -z "$TARGET" -k "$1"
 
         CONTENTS=$(
-            cat "$TARGET" |\
             # grab the domains only
-            awk -F ',' '{print $1}' |\
+            awk -F ',' '{print $1}' < "$TARGET" |\
             # remove all comments
             sed '/^#/ d'
         )
@@ -147,7 +126,7 @@ fetch_bambenek_dga() {
 
         echo " -- $TARGET - $1"
 
-        curl -o $TARGET -z $TARGET -k "$1"
+        curl -o "$TARGET" -z "$TARGET" -k "$1"
 
         CONTENTS=$(
             # inflate
@@ -175,12 +154,11 @@ fetch_domains_comments() {
 
         echo " -- $TARGET - $1"
 
-        curl -o $TARGET -z $TARGET -k "$1"
+        curl -o "$TARGET" -z "$TARGET" -k "$1"
 
         CONTENTS=$(
-            cat "$TARGET" |\
             # remove line comments and preserve the domains
-            sed -e 's/#.*$//' -e '/^$/d' |\
+            sed -e 's/#.*$//' -e '/^$/d' < "$TARGET" |\
             # remove all comments
             grep -v '#'
         )
@@ -201,21 +179,23 @@ fetch_hosts() {
 
         echo " -- $TARGET - $1"
 
-        curl -o $TARGET -z $TARGET -k "$1"
+        curl -o "$TARGET" -z "$TARGET" -k "$1"
 
         CONTENTS=$(
-            cat "$TARGET" |\
             # remove all comments
-            grep -v '#' |\
+            grep -v '#' < "$TARGET" |\
             # remove all ipv4 addresses in format:
-            # - 127.0.0.1<TAB>
-            sed -e 's/127.0.0.1\x09//g' |\
+            # - 127.0.0.1<SPACE>
+            sed -e 's/127.0.0.1\s//g' |\
             # remove all ipv4 addresses in format:
             # - 0.0.0.0<SPACE>
-            sed -e 's/0.0.0.0\x20//g' |\
+            sed -e 's/0.0.0.0\s//g' |\
             # remove all ipv6 addresses in format:
             # - ::<SPACE>
-            sed -e 's/\:\:\x20//g'
+            sed -e 's/\:\:\s//g' |\
+            # remove all ipv6 addresses in format:
+            # - ::1<SPACE>
+            sed -e 's/\:\:1\s//g'
         )
 
         # save the contents to a temporary file
@@ -234,11 +214,11 @@ fetch_phishtank_gz() {
 
         echo " -- $TARGET - $1"
 
-        curl -o $TARGET -z $TARGET -k "$1"
+        curl -o "$TARGET" -z "$TARGET" -k "$1"
         
         CONTENTS=$(
             # inflate
-            gzip -c -d $TARGET |\
+            gzip -c -d "$TARGET" |\
             # grab the urls
             awk -F ',' '{print $2}' |\
             # grab the domain from an entry with/without url scheme
@@ -264,12 +244,11 @@ fetch_url_hosts(){
 
         echo " -- $TARGET - $1"
 
-        curl -o $TARGET -z $TARGET -k "$1"
+        curl -o "$TARGET" -z "$TARGET" -k "$1"
 
         CONTENTS=$(
-            cat "$TARGET" |\
             # remove all comments
-            sed '/^#/ d' |\
+            sed '/^#/ d' < "$TARGET"  |\
             # grab the domain from an entry with/without url scheme
             awk -F '/' '{ if ($0~"(http|https)://") {print $3} else {print $1} }'
         )
@@ -295,36 +274,35 @@ for line in sys.stdin:
 
 # clean up/format the domain list for final version
 sanitize_domain_list() {
-    cat $TEMP_DIR/*.temporary |\
-    # remove port left-overs
-    awk -F ':' '{print $1}' |\
-    # remove "dirty" urls
-    awk -F '/' '{print $1}' |\
+    cat "$TEMP_DIR"/*.temporary |\
+    # lowercase everything
+    awk '{print tolower($0)}' |\
     # remove malformed url args
     awk -F '?' '{print $1}' |\
+    # remove "dirty" urls
+    awk -F '/' '{print $1}' |\
+    # remove port left-overs
+    awk -F ':' '{print $1}' |\
+    # remove the start match and separator symbols
+    sed -e 's/||//g' -e 's/\^//g' |\
+    # remove single/double quotes (artifacts from parsing)
+    sed -e "s/'/ /g" -e 's/\"//g' |\
     # remove ips
     grep -v '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}$' |\
     # remove invalid domain names
     grep '\.' |\
-    # remove the start match and separator symbols
-    sed -e 's/||//g' -e 's/\^//g' |\
-    # lowercase everything
-    awk '{print tolower($0)}' |\
     # filter out sanitize domains according to IDNA RFC
     python_idna_encoder |\
-    # or you can use libidn, though
-    # WARNING: slow
-    #xargs -L1 idn |\
     # sort (and remove duplicates) entries
     sort -u |\
     # remove all white-listed domains
-    grep -Evf $WHITELIST
+    grep -Evf "$WHITELIST"
 }
 
 # remove the left-over temporary files
 clean_temporary_files() {
     # remove the temporary files
-    rm -rf $TEMP_DIR/*.temporary
+    rm -rf "$TEMP_DIR"/*.temporary
 }
 
 # helper - warn if something is missing
@@ -381,19 +359,13 @@ fi
 
 mkdir -p "$TEMP_DIR/sources"
 
+echo "[*] updating adaway mobile list..."
+fetch_hosts \
+    "https://raw.githubusercontent.com/AdAway/adaway.github.io/master/hosts.txt"
+
 echo "[*] updating adguard domain list..."
 fetch_ad_block_rules \
     "https://adguard.com/en/filter-rules.html?id=15"
-
-echo "[*] updating abuse.ch ransomware lists..."
-fetch_domains_comments \
-    "https://ransomwaretracker.abuse.ch/downloads/CW_C2_DOMBL.txt" \
-    "https://ransomwaretracker.abuse.ch/downloads/LY_C2_DOMBL.txt" \
-    "https://ransomwaretracker.abuse.ch/downloads/TC_C2_DOMBL.txt" \
-    "https://ransomwaretracker.abuse.ch/downloads/TL_C2_DOMBL.txt" \
-    "https://ransomwaretracker.abuse.ch/downloads/RW_DOMBL.txt"
-fetch_abuse_ch_feed \
-    "https://ransomwaretracker.abuse.ch/feeds/csv/"
 
 echo "[*] updating abuse.ch urlhaus list..."
 fetch_url_hosts \
@@ -419,6 +391,10 @@ echo "[*] updating bbcan177 ms2 list..."
 fetch_domains_comments \
     "https://gist.githubusercontent.com/BBcan177/4a8bf37c131be4803cb2/raw/"
 
+echo "[*] updating blackjack8 iosad list..."
+fetch_domains_comments \
+    "https://raw.githubusercontent.com/BlackJack8/iOSAdblockList/master/Hosts.txt"
+
 echo "[*] updating botvrij ioc lists..."
 fetch_domains_comments \
     "https://www.botvrij.eu/data/ioclist.domain" \
@@ -440,6 +416,10 @@ echo "[*] updating cybercrime-tracker lists..."
 fetch_url_hosts \
     "https://cybercrime-tracker.net/all.php" \
     "https://cybercrime-tracker.net/ccamgate.php"
+
+echo "[*] updating datamaster-2501 list..."
+fetch_hosts \
+    "https://raw.githubusercontent.com/DataMaster-2501/DataMaster-Android-AdBlock-Hosts/master/hosts"
 
 echo "[*] updating energized regional list..."
 fetch_domains_comments \
@@ -465,7 +445,7 @@ fetch_domains_comments \
     "https://v.firebog.net/hosts/Shalla-mal.txt" \
     "https://v.firebog.net/hosts/static/w3kbl.txt"
 
-# info: https://hosts-file.net/?s=classifications
+# INFO: https://hosts-file.net/?s=classifications
 echo "[*] updating hosts-file lists..."
 fetch_hosts \
     "https://hosts-file.net/ad_servers.txt" \
@@ -479,9 +459,15 @@ fetch_hosts \
     "https://hosts-file.net/psh.txt" \
     "https://hosts-file.net/pup.txt"
 
-echo "[*] updating jawz101 mobile list..."
+echo "[*] updating jakejarvis ios list..."
+fetch_ad_block_rules \
+    "https://raw.githubusercontent.com/jakejarvis/ios-trackers/master/adguard.txt"
+
+# WARN: this list may contain false-positives
+echo "[*] updating lightswitch05 lists..."
 fetch_hosts \
-    "https://raw.githubusercontent.com/jawz101/MobileAdTrackers/master/hosts"
+    "https://raw.githubusercontent.com/lightswitch05/hosts/master/ads-and-tracking-extended.txt" \
+    "https://raw.githubusercontent.com/lightswitch05/hosts/master/tracking-aggressive-extended.txt"
 
 echo "[*] updating malwaredomains list..."
 fetch_domains_comments \
@@ -499,7 +485,7 @@ echo "[*] updating notracking feed..."
 fetch_hosts \
     "https://raw.githubusercontent.com/notracking/hosts-blocklists/master/hostnames.txt"
 
-# WARNING: can cause false-positives
+# WARN: the list might contain false-positives
 echo "[*] updating openphish feed..."
 fetch_url_hosts \
     "https://openphish.com/feed.txt"
@@ -508,10 +494,14 @@ echo "[*] updating phishing army list..."
 fetch_domains_comments \
     "https://phishing.army/download/phishing_army_blocklist_extended.txt"
 
-# WARNING: will cause false-positives
+# WARN: the list contains false-positives
 echo "[*] updating phishtank feed..."
 fetch_phishtank_gz \
     "https://data.phishtank.com/data/online-valid.csv.gz"
+
+echo "[*] updating pirat28 ihatetraker list..."
+fetch_domains_comments \
+    "https://raw.githubusercontent.com/pirat28/IHateTracker/master/iHateTracker.txt"
 
 echo "[*] updating pgl ad servers..."
 fetch_domains_comments \
@@ -532,7 +522,7 @@ fetch_domains_comments \
     "https://gitlab.com/quidsup/notrack-blocklists/raw/master/notrack-blocklist.txt" \
     "https://gitlab.com/quidsup/notrack-blocklists/raw/master/notrack-malware.txt"
 
-# info: https://isc.sans.edu/suspicious_domains.html
+# INFO: https://isc.sans.edu/suspicious_domains.html
 echo "[*] updating sans feed..."
 fetch_domains_comments \
     "https://isc.sans.edu/feeds/suspiciousdomains_Medium.txt"
@@ -545,14 +535,14 @@ fetch_domains_comments \
 echo "[*] updating stamparm lists..."
 fetch_domains_comments \
     "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/anonymous_web_proxy.txt" \
-    "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/bad_wpad.txt" \
+    "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/badwpad.txt" \
     "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/computrace.txt" \
     "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/domain.txt" \
     "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/dynamic_domain.txt" \
     "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/onion.txt" \
     "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/pua.txt"
 
-# WARNING: THIS IS BEING TRANSMITTED OVER HTTP
+# WARN: this list is being transmitted over http
 echo "[*] updating vxvault list..."
 fetch_url_hosts \
     "http://vxvault.net/URL_List.php"
@@ -562,10 +552,15 @@ fetch_domains_comments \
     "https://raw.githubusercontent.com/keithmccammon/tor2web-domains/master/tor2web-domains.txt" \
     "https://raw.githubusercontent.com/WalnutATiie/google_search/master/resourcefile/keywords_google.txt"
 
+# WARN: this list blocks license/activation domains for popular software
+echo "[*] updating vokins yhosts list..."
+fetch_hosts \
+    "https://raw.githubusercontent.com/vokins/yhosts/master/hosts"
+
 echo "[*] updating yhonay antipopads list..."
 fetch_hosts \
     "https://raw.githubusercontent.com/Yhonay/antipopads/master/hosts"
 
-sanitize_domain_list > $OUT_FILE
+sanitize_domain_list > "$OUT_FILE"
 
 clean_temporary_files
