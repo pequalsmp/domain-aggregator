@@ -373,7 +373,8 @@ fetch_url_hosts \
 
 echo "[*] updating anudeepnd list..."
 fetch_hosts \
-    "https://raw.githubusercontent.com/anudeepND/blacklist/master/adservers.txt"
+    "https://raw.githubusercontent.com/anudeepND/blacklist/master/adservers.txt" \
+    "https://raw.githubusercontent.com/anudeepND/blacklist/master/CoinMiner.txt"
 
 echo "[*] updating ayashige feed..."
 fetch_ayashige_feed \
@@ -445,20 +446,6 @@ fetch_domains_comments \
     "https://v.firebog.net/hosts/Shalla-mal.txt" \
     "https://v.firebog.net/hosts/static/w3kbl.txt"
 
-# INFO: https://hosts-file.net/?s=classifications
-echo "[*] updating hosts-file lists..."
-fetch_hosts \
-    "https://hosts-file.net/ad_servers.txt" \
-    "https://hosts-file.net/emd.txt" \
-    "https://hosts-file.net/exp.txt" \
-    "https://hosts-file.net/fsa.txt" \
-    "https://hosts-file.net/grm.txt" \
-    "https://hosts-file.net/hjk.txt" \
-    "https://hosts-file.net/mmt.txt" \
-    "https://hosts-file.net/pha.txt" \
-    "https://hosts-file.net/psh.txt" \
-    "https://hosts-file.net/pup.txt"
-
 echo "[*] updating jakejarvis ios list..."
 fetch_ad_block_rules \
     "https://raw.githubusercontent.com/jakejarvis/ios-trackers/master/adguard.txt"
@@ -480,6 +467,11 @@ fetch_domains_comments \
 echo "[*] updating mitchellkrogza list..."
 fetch_hosts \
     "https://raw.githubusercontent.com/mitchellkrogza/Badd-Boyz-Hosts/master/hosts"
+
+echo "[*] updating mitchellkrogza phishing.database..."
+fetch_domains_comments \
+    "https://raw.githubusercontent.com/mitchellkrogza/Phishing.Database/master/phishing-domains-ACTIVE.txt" \
+    "https://raw.githubusercontent.com/mitchellkrogza/Phishing.Database/master/phishing-domains-NEW-today.txt"
 
 echo "[*] updating notracking feed..."
 fetch_hosts \
