@@ -446,6 +446,11 @@ fetch_domains_comments \
     "https://v.firebog.net/hosts/Shalla-mal.txt" \
     "https://v.firebog.net/hosts/static/w3kbl.txt"
 
+# INFO: disabled by default
+#echo "[*] updating heuristicsecurity doh list..."
+#fetch_url_hosts \
+#    "https://heuristicsecurity.com/dohservers.txt"
+
 echo "[*] updating jakejarvis ios list..."
 fetch_ad_block_rules \
     "https://raw.githubusercontent.com/jakejarvis/ios-trackers/master/adguard.txt"
@@ -482,9 +487,10 @@ echo "[*] updating openphish feed..."
 fetch_url_hosts \
     "https://openphish.com/feed.txt"
 
-echo "[*] updating phishing army list..."
-fetch_domains_comments \
-    "https://phishing.army/download/phishing_army_blocklist_extended.txt"
+# INFO: aggregate of openphish,phishtank and PhishFindR
+#echo "[*] updating phishing army list..."
+#fetch_domains_comments \
+#    "https://phishing.army/download/phishing_army_blocklist_extended.txt"
 
 # WARN: the list contains false-positives
 echo "[*] updating phishtank feed..."
