@@ -475,8 +475,7 @@ fetch_hosts \
 
 echo "[*] updating mitchellkrogza phishing.database..."
 fetch_domains_comments \
-    "https://raw.githubusercontent.com/mitchellkrogza/Phishing.Database/master/phishing-domains-ACTIVE.txt" \
-    "https://raw.githubusercontent.com/mitchellkrogza/Phishing.Database/master/phishing-domains-NEW-today.txt"
+    "https://raw.githubusercontent.com/mitchellkrogza/Phishing.Database/master/phishing-domains-ACTIVE.txt"
 
 echo "[*] updating notracking feed..."
 fetch_hosts \
