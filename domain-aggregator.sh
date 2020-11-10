@@ -13,10 +13,11 @@ export LC_ALL="C"
 # - as we download the file
 # try to guess the timestamp of the remote file
 # retry 5 times with 30s delay inbetween
+# fail silently instead of continuing
 # don't print out anything (silent)
 # add user-agent
 # - some websites refuse the connection if the UA is cURL
-alias curl='curl --compressed --location --no-keepalive --remote-time --retry 3 --retry-delay 30 --silent --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"'
+alias curl='curl --compressed --location --no-keepalive --remote-time --retry 3 --retry-delay 30 --fail --silent --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36"'
 
 # force grep to work with text in order to avoid some files being treated as binaries
 alias grep='grep --text'
@@ -77,7 +78,7 @@ fetch_ayashige_feed() {
 
         echo " -- $TARGET - $1"
 
-        curl -o "$TARGET" -z "$TARGET" -k "$1"
+        curl -H "accept: application/json" -o "$TARGET" -z "$TARGET" -k "$1"
 
         CONTENTS=$(
             # use jq to grab all domains
@@ -91,23 +92,20 @@ fetch_ayashige_feed() {
     done
 }
 
-
-# fetch csv list
-# - c2-dommasterlist.txt
-fetch_bambenek_c2() {
+# fetch azorult feed
+# - [ "<domain>" ]
+fetch_azorult_feed() {
     while test $# -gt 0
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
 
         echo " -- $TARGET - $1"
 
-        curl -o "$TARGET" -z "$TARGET" -k "$1"
+        curl -H "accept: application/json" -o "$TARGET" -z "$TARGET" -k "$1"
 
         CONTENTS=$(
-            # grab the domains only
-            awk -F ',' '{print $1}' < "$TARGET" |\
-            # remove all comments
-            sed '/^#/ d'
+            # grab fqdn
+            jq -r '.[]' < "$TARGET"
         )
 
         # save the contents to a temporary file
@@ -117,9 +115,9 @@ fetch_bambenek_c2() {
     done
 }
 
-# fetch gzipped DGA feed
-# - dga_feed.gz
-fetch_bambenek_dga() {
+# fetch csv and extract fqdn
+# - "<id>","<type>","<url>","<date>"
+fetch_benkow_feed() {
     while test $# -gt 0
     do
         TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
@@ -129,12 +127,10 @@ fetch_bambenek_dga() {
         curl -o "$TARGET" -z "$TARGET" -k "$1"
 
         CONTENTS=$(
-            # inflate
-            gzip -c -d "$TARGET" |\
-            # grab the domains only
-            awk -F ',' '{print $1}' |\
-            # remove all comments
-            sed '/^#/ d'
+            # grab urls
+            awk -F '";"' '{print $3}' < "$TARGET" |\
+            # grab the domain from an entry with/without url scheme
+            awk -F '/' '{ if ($0~"(http|https)://") {print $3} else {print $1} }'
         )
 
         # save the contents to a temporary file
@@ -205,6 +201,64 @@ fetch_hosts() {
     done
 }
 
+# fetch malsilo's feed
+# - master-feed.json
+fetch_malsilo_feed() {
+    while test $# -gt 0
+    do
+        TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
+
+        echo " -- $TARGET - $1"
+
+        curl -o "$TARGET" -z "$TARGET" -k "$1"
+
+        CONTENT_DROP_SITES=$(
+            # grab urls
+            jq -r '.data[] | .drop_sites[]' < "$TARGET" |\
+            # grab the domain from an entry with/without url scheme
+            awk -F '/' '{ if ($0~"(http|https)://") {print $3} else {print $1} }'
+        )
+
+        CONTENT_DNS_REQUESTS=$(
+            # grab urls
+            jq -r '.data[].network_traffic | select(.dns != null) | .dns[]' < "$TARGET"
+        )
+
+        TEMP_FILE="$TEMP_DIR/$(($(date +%s%N)/1000000)).temporary"
+
+        # save the contents to a temporary file
+        echo "$CONTENT_DROP_SITES" > "$TEMP_FILE"
+        echo "$CONTENT_DNS_REQUESTS" >> "$TEMP_FILE"
+
+        shift
+    done
+}
+
+# fetch PhishStats's PhishScore CSV
+# - "<date>","<score>","<url>","<host>"
+fetch_phishstats_feed() {
+    while test $# -gt 0
+    do
+        TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
+
+        echo " -- $TARGET - $1"
+
+        curl -o "$TARGET" -z "$TARGET" -k "$1"
+
+        CONTENTS=$(
+            # grab the domains only
+            awk -F '","' '{print $3}' < "$TARGET" |\
+            # grab the domain from an entry with/without url scheme
+            awk -F '/' '{ if ($0~"(http|https)://") {print $3} else {print $1} }'
+        )
+
+        # save the contents to a temporary file
+        echo "$CONTENTS" > "$TEMP_DIR/$(($(date +%s%N)/1000000)).temporary"
+
+        shift
+    done
+}
+
 # fetch gzipped Phishtank feed
 # - verified_online.csv.gz
 fetch_phishtank_gz() {
@@ -249,6 +303,32 @@ fetch_url_hosts(){
         CONTENTS=$(
             # remove all comments
             sed '/^#/ d' < "$TARGET"  |\
+            # grab the domain from an entry with/without url scheme
+            awk -F '/' '{ if ($0~"(http|https)://") {print $3} else {print $1} }'
+        )
+
+        # save the contents to a temporary file
+        echo "$CONTENTS" > "$TEMP_DIR/$(($(date +%s%N)/1000000)).temporary"
+
+        shift
+    done
+}
+
+
+# fetch csv and extract fqdn
+# - "<id>","<type>","<url>","<date>"
+fetch_viriback_feed() {
+    while test $# -gt 0
+    do
+        TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
+
+        echo " -- $TARGET - $1"
+
+        curl -o "$TARGET" -z "$TARGET" -k "$1"
+
+        CONTENTS=$(
+            # grab urls
+            awk -F ';' '{print $2}' < "$TARGET" |\
             # grab the domain from an entry with/without url scheme
             awk -F '/' '{ if ($0~"(http|https)://") {print $3} else {print $1} }'
         )
@@ -368,8 +448,14 @@ fetch_ad_block_rules \
     "https://adguard.com/en/filter-rules.html?id=15"
 
 echo "[*] updating abuse.ch urlhaus list..."
+fetch_hosts \
+    "https://urlhaus.abuse.ch/downloads/hostfile/"
 fetch_url_hosts \
-    "https://urlhaus.abuse.ch/downloads/text/"
+    "https://urlhaus.abuse.ch/downloads/text_online/"
+
+echo "[*] updating azorult list..."
+fetch_azorult_feed \
+    "https://azorult-tracker.net/api/domain/"
 
 echo "[*] updating anudeepnd list..."
 fetch_hosts \
@@ -380,14 +466,6 @@ echo "[*] updating ayashige feed..."
 fetch_ayashige_feed \
     "https://ayashige.herokuapp.com/feed"
 
-echo "[*] updating bambenek c2 list..."
-fetch_bambenek_c2 \
-    "https://osint.bambenekconsulting.com/feeds/c2-dommasterlist.txt"
-
-echo "[*] updating bambenek dga feed..."
-fetch_bambenek_dga \
-    "https://osint.bambenekconsulting.com/feeds/dga-feed.gz"
-
 echo "[*] updating bbcan177 ms2 list..."
 fetch_domains_comments \
     "https://gist.githubusercontent.com/BBcan177/4a8bf37c131be4803cb2/raw/"
@@ -395,6 +473,10 @@ fetch_domains_comments \
 echo "[*] updating blackjack8 iosad list..."
 fetch_domains_comments \
     "https://raw.githubusercontent.com/BlackJack8/iOSAdblockList/master/Hosts.txt"
+
+echo "[*] updating benkow list..."
+fetch_benkow_feed \
+    "https://benkow.cc/export.php"
 
 echo "[*] updating botvrij ioc lists..."
 fetch_domains_comments \
@@ -422,6 +504,10 @@ echo "[*] updating datamaster-2501 list..."
 fetch_hosts \
     "https://raw.githubusercontent.com/DataMaster-2501/DataMaster-Android-AdBlock-Hosts/master/hosts"
 
+echo "[*] updating digitalside list..."
+fetch_domains_comments \
+    "https://osint.digitalside.it/Threat-Intel/lists/latestdomains.txt"
+
 echo "[*] updating energized regional list..."
 fetch_domains_comments \
     "https://block.energized.pro/extensions/regional/formats/domains.txt"
@@ -432,13 +518,12 @@ fetch_hosts \
     "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Dead/hosts" \
     "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Risk/hosts" \
     "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Spam/hosts" \
-    "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/StreamingAds/hosts" \
     "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/UncheckyAds/hosts"
 
 echo "[*] updating firebog lists..."
 fetch_domains_comments \
-    "https://v.firebog.net/hosts/Airelle-trc.txt" \
-    "https://v.firebog.net/hosts/BillStearns.txt" \
+    "https://v.firebog.net/hosts/AdguardDNS.txt" \
+    "https://v.firebog.net/hosts/Admiral.txt" \
     "https://v.firebog.net/hosts/Easyprivacy.txt" \
     "https://v.firebog.net/hosts/Prigent-Ads.txt" \
     "https://v.firebog.net/hosts/Prigent-Malware.txt" \
@@ -455,11 +540,27 @@ echo "[*] updating jakejarvis ios list..."
 fetch_ad_block_rules \
     "https://raw.githubusercontent.com/jakejarvis/ios-trackers/master/adguard.txt"
 
+echo "[*] updating jdlingyu ad-wars list..."
+fetch_domains_comments \
+    "https://raw.githubusercontent.com/jdlingyu/ad-wars/master/sha_ad_hosts"
+
+echo "[*] updating jerryn70 lists..."
+fetch_hosts \
+    "https://raw.githubusercontent.com/jerryn70/GoodbyeAds/master/Extension/GoodbyeAds-Samsung-AdBlock.txt" \
+    "https://raw.githubusercontent.com/jerryn70/GoodbyeAds/master/Extension/GoodbyeAds-Spotify-AdBlock.txt" \
+    "https://raw.githubusercontent.com/jerryn70/GoodbyeAds/master/Extension/GoodbyeAds-Xiaomi-Extension.txt" \
+    "https://raw.githubusercontent.com/jerryn70/GoodbyeAds/master/Extension/GoodbyeAds-YouTube-AdBlock.txt"
+
 # WARN: this list may contain false-positives
 echo "[*] updating lightswitch05 lists..."
 fetch_hosts \
-    "https://raw.githubusercontent.com/lightswitch05/hosts/master/ads-and-tracking-extended.txt" \
-    "https://raw.githubusercontent.com/lightswitch05/hosts/master/tracking-aggressive-extended.txt"
+    "https://raw.githubusercontent.com/lightswitch05/hosts/master/docs/lists/ads-and-tracking-extended.txt" \
+    "https://raw.githubusercontent.com/lightswitch05/hosts/master/docs/lists/hate-and-junk-extended.txt" \
+    "https://raw.githubusercontent.com/lightswitch05/hosts/master/docs/lists/tracking-aggressive-extended.txt"
+
+echo "[*] updating malsilo list..."
+fetch_malsilo_feed \
+    "https://malsilo.gitlab.io/feeds/dumps/master-feed.json"
 
 echo "[*] updating malwaredomains list..."
 fetch_domains_comments \
@@ -510,6 +611,10 @@ fetch_domains_comments \
     "https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/android-tracking.txt" \
     "https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/SmartTV.txt"
 
+echo "[*] updating phishstats list..."
+fetch_phishstats_feed \
+    "https://phishstats.info/phish_score.csv"
+
 echo "[*] updating piwik referrer spam list..."
 fetch_domains_comments \
     "https://raw.githubusercontent.com/piwik/referrer-spam-blacklist/master/spammers.txt"
@@ -531,28 +636,34 @@ fetch_domains_comments \
 
 echo "[*] updating stamparm lists..."
 fetch_domains_comments \
+    "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/android_pua.txt" \
     "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/anonymous_web_proxy.txt" \
-    "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/badwpad.txt" \
+    "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/bad_wpad.txt" \
     "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/computrace.txt" \
     "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/domain.txt" \
     "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/dynamic_domain.txt" \
     "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/onion.txt" \
     "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/suspicious/pua.txt"
 
-# WARN: this list is being transmitted over http
-echo "[*] updating vxvault list..."
-fetch_url_hosts \
-    "http://vxvault.net/URL_List.php"
-
 echo "[*] updating various web-to-onion lists..."
 fetch_domains_comments \
     "https://raw.githubusercontent.com/keithmccammon/tor2web-domains/master/tor2web-domains.txt" \
     "https://raw.githubusercontent.com/WalnutATiie/google_search/master/resourcefile/keywords_google.txt"
 
+# WARN: insecure (transmitted over HTTP)
+#echo "[*] updating viriback list..."
+#fetch_viriback_feed \
+#    "http://tracker.viriback.com/dump.php"
+
 # WARN: this list blocks license/activation domains for popular software
 echo "[*] updating vokins yhosts list..."
 fetch_hosts \
     "https://raw.githubusercontent.com/vokins/yhosts/master/hosts"
+
+# WARN: insecure (transmitted over HTTP)
+#echo "[*] updating vxvault list..."
+#fetch_url_hosts \
+#    "http://vxvault.net/URL_List.php"
 
 echo "[*] updating yhonay antipopads list..."
 fetch_hosts \
