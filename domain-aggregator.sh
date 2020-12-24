@@ -376,7 +376,7 @@ sanitize_domain_list() {
     # sort (and remove duplicates) entries
     sort -u |\
     # remove all white-listed domains
-    grep -Evf "$WHITELIST"
+    grep -Fvxf "$WHITELIST"
 }
 
 # remove the left-over temporary files
@@ -628,11 +628,6 @@ fetch_domains_comments \
 echo "[*] updating sans feed..."
 fetch_domains_comments \
     "https://isc.sans.edu/feeds/suspiciousdomains_Medium.txt"
-
-echo "[*] updating squidblacklist lists..."
-fetch_domains_comments \
-    "https://www.squidblacklist.org/downloads/dg-ads.acl" \
-    "https://www.squidblacklist.org/downloads/dg-malicious.acl"
 
 echo "[*] updating stamparm lists..."
 fetch_domains_comments \
