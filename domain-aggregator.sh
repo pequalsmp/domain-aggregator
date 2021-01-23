@@ -92,29 +92,6 @@ fetch_ayashige_feed() {
     done
 }
 
-# fetch azorult feed
-# - [ "<domain>" ]
-fetch_azorult_feed() {
-    while test $# -gt 0
-    do
-        TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
-
-        echo " -- $TARGET - $1"
-
-        curl -H "accept: application/json" -o "$TARGET" -z "$TARGET" -k "$1"
-
-        CONTENTS=$(
-            # grab fqdn
-            jq -r '.[]' < "$TARGET"
-        )
-
-        # save the contents to a temporary file
-        echo "$CONTENTS" > "$TEMP_DIR/$(($(date +%s%N)/1000000)).temporary"
-
-        shift
-    done
-}
-
 # fetch csv and extract fqdn
 # - "<id>","<type>","<url>","<date>"
 fetch_benkow_feed() {
@@ -157,6 +134,29 @@ fetch_domains_comments() {
             sed -e 's/#.*$//' -e '/^$/d' < "$TARGET" |\
             # remove all comments
             grep -v '#'
+        )
+
+        # save the contents to a temporary file
+        echo "$CONTENTS" > "$TEMP_DIR/$(($(date +%s%N)/1000000)).temporary"
+
+        shift
+    done
+}
+
+# fetch json-encoded array of domains
+# - [ "<domain>" ]
+fetch_json_array_feed() {
+    while test $# -gt 0
+    do
+        TARGET=$(readlink -m "$TEMP_DIR/sources/$(echo "$1" | md5sum - | cut -c 1-32)")
+
+        echo " -- $TARGET - $1"
+
+        curl -H "accept: application/json" -o "$TARGET" -z "$TARGET" -k "$1"
+
+        CONTENTS=$(
+            # grab fqdn
+            jq -r '.[]' < "$TARGET"
         )
 
         # save the contents to a temporary file
@@ -371,7 +371,7 @@ sanitize_domain_list() {
     grep -v '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}$' |\
     # remove invalid domain names
     grep '\.' |\
-    # filter out sanitize domains according to IDNA RFC
+    # filter out IDNA non-conforming domains
     python_idna_encoder |\
     # sort (and remove duplicates) entries
     sort -u |\
@@ -453,9 +453,9 @@ fetch_hosts \
 fetch_url_hosts \
     "https://urlhaus.abuse.ch/downloads/text_online/"
 
-echo "[*] updating azorult list..."
-fetch_azorult_feed \
-    "https://azorult-tracker.net/api/domain/"
+echo "[*] updating alphasoc list..."
+fetch_domains_comments \
+    "https://feeds.alphasoc.net/ryuk.txt"
 
 echo "[*] updating anudeepnd list..."
 fetch_hosts \
@@ -466,12 +466,16 @@ echo "[*] updating ayashige feed..."
 fetch_ayashige_feed \
     "https://ayashige.herokuapp.com/feed"
 
+echo "[*] updating azorult list..."
+fetch_json_array_feed \
+    "https://azorult-tracker.net/api/domain/"
+
 echo "[*] updating bbcan177 ms2 list..."
 fetch_domains_comments \
     "https://gist.githubusercontent.com/BBcan177/4a8bf37c131be4803cb2/raw/"
 
 echo "[*] updating blackjack8 iosad list..."
-fetch_domains_comments \
+fetch_ad_block_rules \
     "https://raw.githubusercontent.com/BlackJack8/iOSAdblockList/master/Hosts.txt"
 
 echo "[*] updating benkow list..."
@@ -499,6 +503,10 @@ echo "[*] updating cybercrime-tracker lists..."
 fetch_url_hosts \
     "https://cybercrime-tracker.net/all.php" \
     "https://cybercrime-tracker.net/ccamgate.php"
+
+echo "[*] updating cyberthreatcoalition list..."
+fetch_domains_comments \
+    "https://blocklist.cyberthreatcoalition.org/vetted/domain.txt"
 
 echo "[*] updating datamaster-2501 list..."
 fetch_hosts \
@@ -530,11 +538,6 @@ fetch_domains_comments \
     "https://v.firebog.net/hosts/Prigent-Phishing.txt" \
     "https://v.firebog.net/hosts/Shalla-mal.txt" \
     "https://v.firebog.net/hosts/static/w3kbl.txt"
-
-# INFO: disabled by default
-#echo "[*] updating heuristicsecurity doh list..."
-#fetch_url_hosts \
-#    "https://heuristicsecurity.com/dohservers.txt"
 
 echo "[*] updating jakejarvis ios list..."
 fetch_ad_block_rules \
@@ -582,6 +585,11 @@ echo "[*] updating notracking feed..."
 fetch_hosts \
     "https://raw.githubusercontent.com/notracking/hosts-blocklists/master/hostnames.txt"
 
+# INFO: disabled by default
+#echo "[*] updating oneofdalls list..."
+#fetch_hosts \
+#    "https://raw.githubusercontent.com/oneoffdallas/dohservers/master/list.txt"
+
 # WARN: the list might contain false-positives
 echo "[*] updating openphish feed..."
 fetch_url_hosts \
@@ -628,6 +636,10 @@ fetch_domains_comments \
 echo "[*] updating sans feed..."
 fetch_domains_comments \
     "https://isc.sans.edu/feeds/suspiciousdomains_Medium.txt"
+
+echo "[*] updating segasec list..."
+fetch_json_array_feed \
+    "https://raw.githubusercontent.com/Segasec/feed/master/phishing-domains.json"
 
 echo "[*] updating stamparm lists..."
 fetch_domains_comments \
