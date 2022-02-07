@@ -12,7 +12,7 @@ export LC_ALL="C"
 # - there's not reason for it, we're closing the connection as soon
 # - as we download the file
 # try to guess the timestamp of the remote file
-# retry 5 times with 30s delay inbetween
+# retry 5 times with 30s delay in between
 # fail silently instead of continuing
 # don't print out anything (silent)
 # add user-agent
@@ -33,11 +33,13 @@ options:
     -t  path to a directory, to be used as storage for temporary files
         default: /tmp
     -b  path to a list of domains to block
-    -w  path to a list of domains to whitelist"
+    -w  path to a list of domains to whitelist
+
+This program requires: awk, coreutils, curl, grep, gzip, jq, python3 and sed to be installed and accessible."
 
 
 # fetch and clean "ad_block" rules, some rules
-# will be dropped as they are dependant on elements
+# will be dropped as they are dependent on elements
 # or URL parts.
 # - <!!><domain><^>
 fetch_ad_block_rules() {
@@ -376,7 +378,7 @@ sanitize_domain_list() {
     # sort (and remove duplicates) entries
     sort -u |\
     # remove all white-listed domains
-    grep -Fvxf "$WHITELIST"
+    grep -Evxf "$WHITELIST"
 }
 
 # remove the left-over temporary files
@@ -386,20 +388,18 @@ clean_temporary_files() {
 }
 
 # helper - warn if something is missing
-cmd_exists() {
+verify_dependencies() {
     while test $# -gt 0
     do
         if ! command -v "$1" >/dev/null 2>&1; then
-            return 1
+            echo "Missing dependency: $1"
+            echo ""
+            echo "You can run this program with -h, to see the list of software dependencies."
+            exit 1
         fi
         shift
     done
 }
-
-if ! cmd_exists "awk" "cat" "curl" "cut" "date" "grep" "gzip" "jq" "md5sum" "mkdir" "python3" "readlink" "sed" "sort" "rm"; then
-    echo 'Missing dependency! Please make sure: awk, coreutils, curl, grep, gzip, jq, python3 and sed are installed and functional.'
-    exit 1
-fi
 
 while getopts "ho:b:t:w:" opt; do
   case $opt in
@@ -419,6 +419,8 @@ while getopts "ho:b:t:w:" opt; do
         ;;
   esac
 done
+
+verify_dependencies "awk" "cat" "curl" "cut" "date" "grep" "gzip" "jq" "md5sum" "mkdir" "python3" "readlink" "sed" "sort" "rm"
 
 if [ -z "$OUT_FILE" ]; then
     echo 'Invalid output file path.'
@@ -443,9 +445,13 @@ echo "[*] updating adaway mobile list..."
 fetch_hosts \
     "https://raw.githubusercontent.com/AdAway/adaway.github.io/master/hosts.txt"
 
-echo "[*] updating adguard domain list..."
+echo "[*] updating adguard dns list..."
 fetch_ad_block_rules \
-    "https://adguard.com/en/filter-rules.html?id=15"
+    "https://raw.githubusercontent.com/AdguardTeam/AdGuardSDNSFilter/master/Filters/rules.txt"
+
+echo "[*] updating adguard cname list..."
+fetch_domains_comments \
+    "https://raw.githubusercontent.com/AdguardTeam/cname-trackers/master/combined_disguised_trackers_justdomains.txt"
 
 echo "[*] updating abuse.ch urlhaus list..."
 fetch_hosts \
@@ -470,13 +476,9 @@ echo "[*] updating azorult list..."
 fetch_json_array_feed \
     "https://azorult-tracker.net/api/domain/"
 
-echo "[*] updating bbcan177 ms2 list..."
-fetch_domains_comments \
-    "https://gist.githubusercontent.com/BBcan177/4a8bf37c131be4803cb2/raw/"
-
 echo "[*] updating blackjack8 iosad list..."
-fetch_ad_block_rules \
-    "https://raw.githubusercontent.com/BlackJack8/iOSAdblockList/master/Hosts.txt"
+fetch_domains_comments \
+    "https://raw.githubusercontent.com/BlackJack8/iOSAdblockList/master/Regular%20Hosts.txt"
 
 echo "[*] updating benkow list..."
 fetch_benkow_feed \
@@ -491,6 +493,10 @@ echo "[*] updating cert-pa infosec list..."
 fetch_domains_comments \
     "https://infosec.cert-pa.it/analyze/listdomains.txt"
 
+echo "[*] updating cert.pl phishing list..."
+fetch_domains_comments \
+    "https://hole.cert.pl/domains/domains.txt"
+
 echo "[*] updating coinblocker browser list..."
 fetch_domains_comments \
     "https://zerodot1.gitlab.io/CoinBlockerLists/list.txt"
@@ -504,14 +510,6 @@ fetch_url_hosts \
     "https://cybercrime-tracker.net/all.php" \
     "https://cybercrime-tracker.net/ccamgate.php"
 
-echo "[*] updating cyberthreatcoalition list..."
-fetch_domains_comments \
-    "https://blocklist.cyberthreatcoalition.org/vetted/domain.txt"
-
-echo "[*] updating datamaster-2501 list..."
-fetch_hosts \
-    "https://raw.githubusercontent.com/DataMaster-2501/DataMaster-Android-AdBlock-Hosts/master/hosts"
-
 echo "[*] updating digitalside list..."
 fetch_domains_comments \
     "https://osint.digitalside.it/Threat-Intel/lists/latestdomains.txt"
@@ -519,14 +517,6 @@ fetch_domains_comments \
 echo "[*] updating energized regional list..."
 fetch_domains_comments \
     "https://block.energized.pro/extensions/regional/formats/domains.txt"
-
-echo "[*] updating fademind lists..."
-fetch_hosts \
-    "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.2o7Net/hosts" \
-    "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Dead/hosts" \
-    "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Risk/hosts" \
-    "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Spam/hosts" \
-    "https://raw.githubusercontent.com/FadeMind/hosts.extras/master/UncheckyAds/hosts"
 
 echo "[*] updating firebog lists..."
 fetch_domains_comments \
@@ -538,6 +528,11 @@ fetch_domains_comments \
     "https://v.firebog.net/hosts/Prigent-Phishing.txt" \
     "https://v.firebog.net/hosts/Shalla-mal.txt" \
     "https://v.firebog.net/hosts/static/w3kbl.txt"
+
+echo "[*] updating frogeye lists..."
+fetch_domains_comments \
+    "https://hostfiles.frogeye.fr/firstparty-trackers.txt" \
+    "https://hostfiles.frogeye.fr/multiparty-trackers.txt"
 
 echo "[*] updating jakejarvis ios list..."
 fetch_ad_block_rules \
@@ -565,14 +560,6 @@ echo "[*] updating malsilo list..."
 fetch_malsilo_feed \
     "https://malsilo.gitlab.io/feeds/dumps/master-feed.json"
 
-echo "[*] updating malwaredomains list..."
-fetch_domains_comments \
-    "https://malwaredomains.usu.edu/justdomains"
-
-echo "[*] updating malwaredomains immortal list..."
-fetch_domains_comments \
-    "https://malwaredomains.usu.edu/immortal_domains.txt"
-
 echo "[*] updating mitchellkrogza list..."
 fetch_hosts \
     "https://raw.githubusercontent.com/mitchellkrogza/Badd-Boyz-Hosts/master/hosts"
@@ -595,7 +582,7 @@ echo "[*] updating openphish feed..."
 fetch_url_hosts \
     "https://openphish.com/feed.txt"
 
-# INFO: aggregate of openphish,phishtank and PhishFindR
+# INFO: aggregate of openphish,phishtank,PhishFindR,cert.pl,urlscan,phishhunt
 #echo "[*] updating phishing army list..."
 #fetch_domains_comments \
 #    "https://phishing.army/download/phishing_army_blocklist_extended.txt"
@@ -619,6 +606,10 @@ fetch_domains_comments \
     "https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/android-tracking.txt" \
     "https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/SmartTV.txt"
 
+echo "[*] updating phishhunt list..."
+fetch_url_hosts \
+    "https://phishunt.io/feed.txt"
+
 echo "[*] updating phishstats list..."
 fetch_phishstats_feed \
     "https://phishstats.info/phish_score.csv"
@@ -627,10 +618,24 @@ echo "[*] updating piwik referrer spam list..."
 fetch_domains_comments \
     "https://raw.githubusercontent.com/piwik/referrer-spam-blacklist/master/spammers.txt"
 
+echo "[*] updating privacy-protection-tools anti-ad list..."
+fetch_domains_comments \
+    "https://raw.githubusercontent.com/privacy-protection-tools/anti-AD/master/anti-ad-domains.txt"
+
 echo "[*] updating quidsup lists..."
 fetch_domains_comments \
     "https://gitlab.com/quidsup/notrack-blocklists/raw/master/notrack-blocklist.txt" \
     "https://gitlab.com/quidsup/notrack-blocklists/raw/master/notrack-malware.txt"
+
+echo "[*] updaing rescures malware list..."
+fetch_domains_comments \
+    "https://rescure.me/rescure_domain_blacklist.txt"
+
+echo "[*] updaing rescures ransomware lists..."
+fetch_domains_comments \
+    "https://rescure.me/malware/ekans.txt" \
+    "https://rescure.me/malware/wastedlocker.txt" \
+    "https://rescure.me/malware/maze.txt"
 
 # INFO: https://isc.sans.edu/suspicious_domains.html
 echo "[*] updating sans feed..."
@@ -657,17 +662,16 @@ fetch_domains_comments \
     "https://raw.githubusercontent.com/keithmccammon/tor2web-domains/master/tor2web-domains.txt" \
     "https://raw.githubusercontent.com/WalnutATiie/google_search/master/resourcefile/keywords_google.txt"
 
-# WARN: insecure (transmitted over HTTP)
-#echo "[*] updating viriback list..."
-#fetch_viriback_feed \
-#    "http://tracker.viriback.com/dump.php"
+echo "[*] updating viriback list..."
+fetch_viriback_feed \
+    "https://tracker.viriback.com/dump.php"
 
 # WARN: this list blocks license/activation domains for popular software
-echo "[*] updating vokins yhosts list..."
+echo "[*] updating velesila yhosts list..."
 fetch_hosts \
-    "https://raw.githubusercontent.com/vokins/yhosts/master/hosts"
+    "https://raw.githubusercontent.com/VeleSila/yhosts/master/hosts"
 
-# WARN: insecure (transmitted over HTTP)
+# WARN: this list is insecure (transmitted over HTTP)
 #echo "[*] updating vxvault list..."
 #fetch_url_hosts \
 #    "http://vxvault.net/URL_List.php"
