@@ -459,10 +459,6 @@ fetch_hosts \
 fetch_url_hosts \
     "https://urlhaus.abuse.ch/downloads/text_online/"
 
-echo "[*] updating alphasoc list..."
-fetch_domains_comments \
-    "https://feeds.alphasoc.net/ryuk.txt"
-
 echo "[*] updating anudeepnd list..."
 fetch_hosts \
     "https://raw.githubusercontent.com/anudeepND/blacklist/master/adservers.txt" \
@@ -636,15 +632,6 @@ fetch_domains_comments \
     "https://rescure.me/malware/ekans.txt" \
     "https://rescure.me/malware/wastedlocker.txt" \
     "https://rescure.me/malware/maze.txt"
-
-# INFO: https://isc.sans.edu/suspicious_domains.html
-echo "[*] updating sans feed..."
-fetch_domains_comments \
-    "https://isc.sans.edu/feeds/suspiciousdomains_Medium.txt"
-
-echo "[*] updating segasec list..."
-fetch_json_array_feed \
-    "https://raw.githubusercontent.com/Segasec/feed/master/phishing-domains.json"
 
 echo "[*] updating stamparm lists..."
 fetch_domains_comments \
