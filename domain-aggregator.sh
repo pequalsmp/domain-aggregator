@@ -455,6 +455,7 @@ fetch_domains_comments \
 
 echo "[*] updating abuse.ch urlhaus list..."
 fetch_hosts \
+    "https://threatfox.abuse.ch/downloads/hostfile/" \
     "https://urlhaus.abuse.ch/downloads/hostfile/"
 fetch_url_hosts \
     "https://urlhaus.abuse.ch/downloads/text_online/"
