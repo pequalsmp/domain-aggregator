@@ -59,7 +59,7 @@ fetch_ad_block_rules() {
             # remove url arg
             grep -v -F '?' |\
             # remove wildcard selectors
-            grep -v -F '*' |\
+            #grep -v -F '*' |\
             # match only the beginning of an address
             grep '||'
         )
@@ -460,6 +460,10 @@ fetch_hosts \
 fetch_url_hosts \
     "https://urlhaus.abuse.ch/downloads/text_online/"
 
+echo "[*] updating androitadorkhan list..."
+fetch_domains_comments \
+    "https://raw.githubusercontent.com/AdroitAdorKhan/antipopads-re/master/formats/domains.txt"
+
 echo "[*] updating anudeepnd list..."
 fetch_hosts \
     "https://raw.githubusercontent.com/anudeepND/blacklist/master/adservers.txt" \
@@ -486,10 +490,6 @@ fetch_domains_comments \
     "https://www.botvrij.eu/data/ioclist.domain" \
     "https://www.botvrij.eu/data/ioclist.hostname"
 
-echo "[*] updating cert-pa infosec list..."
-fetch_domains_comments \
-    "https://infosec.cert-pa.it/analyze/listdomains.txt"
-
 echo "[*] updating cert.pl phishing list..."
 fetch_domains_comments \
     "https://hole.cert.pl/domains/domains.txt"
@@ -511,9 +511,10 @@ echo "[*] updating digitalside list..."
 fetch_domains_comments \
     "https://osint.digitalside.it/Threat-Intel/lists/latestdomains.txt"
 
-echo "[*] updating energized regional list..."
-fetch_domains_comments \
-    "https://block.energized.pro/extensions/regional/formats/domains.txt"
+# WARN: this list may contain false-positives
+#echo "[*] updating energized regional list..."
+#fetch_domains_comments \
+#    "https://block.energized.pro/extensions/regional/formats/domains.txt"
 
 echo "[*] updating firebog lists..."
 fetch_domains_comments \
@@ -536,8 +537,8 @@ fetch_ad_block_rules \
     "https://raw.githubusercontent.com/jakejarvis/ios-trackers/master/adguard.txt"
 
 echo "[*] updating jdlingyu ad-wars list..."
-fetch_domains_comments \
-    "https://raw.githubusercontent.com/jdlingyu/ad-wars/master/sha_ad_hosts"
+fetch_hosts \
+  "https://raw.githubusercontent.com/jdlingyu/ad-wars/master/sha_ad_hosts"
 
 echo "[*] updating jerryn70 lists..."
 fetch_hosts \
@@ -545,6 +546,11 @@ fetch_hosts \
     "https://raw.githubusercontent.com/jerryn70/GoodbyeAds/master/Extension/GoodbyeAds-Spotify-AdBlock.txt" \
     "https://raw.githubusercontent.com/jerryn70/GoodbyeAds/master/Extension/GoodbyeAds-Xiaomi-Extension.txt" \
     "https://raw.githubusercontent.com/jerryn70/GoodbyeAds/master/Extension/GoodbyeAds-YouTube-AdBlock.txt"
+
+echo "[*] updating kriskintel lists..."
+fetch_domains_comments \
+    "https://kriskintel.com/feeds/ktip_malicious_domains.txt" \
+    "https://kriskintel.com/feeds/ktip_ransomware_feeds.txt"
 
 # WARN: this list may contain false-positives
 echo "[*] updating lightswitch05 lists..."
@@ -565,21 +571,25 @@ echo "[*] updating mitchellkrogza phishing.database..."
 fetch_domains_comments \
     "https://raw.githubusercontent.com/mitchellkrogza/Phishing.Database/master/phishing-domains-ACTIVE.txt"
 
+echo "[*] updating neo23x0 c2 ioc list..."
+fetch_domains_comments \
+    "https://raw.githubusercontent.com/Neo23x0/signature-base/master/iocs/c2-iocs.txt"
+
 echo "[*] updating notracking feed..."
 fetch_hosts \
     "https://raw.githubusercontent.com/notracking/hosts-blocklists/master/hostnames.txt"
 
-# INFO: disabled by default
+# INFO: this list contains domains for public DoH servers (which could be used to bypass plain DNS)
 #echo "[*] updating oneofdalls list..."
 #fetch_hosts \
 #    "https://raw.githubusercontent.com/oneoffdallas/dohservers/master/list.txt"
 
-# WARN: the list might contain false-positives
+# WARN: this list might contain false-positives
 echo "[*] updating openphish feed..."
 fetch_url_hosts \
     "https://openphish.com/feed.txt"
 
-# INFO: aggregate of openphish,phishtank,PhishFindR,cert.pl,urlscan,phishhunt
+# INFO: this list is an aggregate of openphish,phishtank,PhishFindR,cert.pl,urlscan,phishhunt
 #echo "[*] updating phishing army list..."
 #fetch_domains_comments \
 #    "https://phishing.army/download/phishing_army_blocklist_extended.txt"
@@ -624,15 +634,19 @@ fetch_domains_comments \
     "https://gitlab.com/quidsup/notrack-blocklists/raw/master/notrack-blocklist.txt" \
     "https://gitlab.com/quidsup/notrack-blocklists/raw/master/notrack-malware.txt"
 
-echo "[*] updaing rescures malware list..."
+echo "[*] updating rescures malware list..."
 fetch_domains_comments \
     "https://rescure.me/rescure_domain_blacklist.txt"
 
-echo "[*] updaing rescures ransomware lists..."
+echo "[*] updating rescures ransomware lists..."
 fetch_domains_comments \
     "https://rescure.me/malware/ekans.txt" \
     "https://rescure.me/malware/wastedlocker.txt" \
     "https://rescure.me/malware/maze.txt"
+
+echo "[*] updating securereload phishing list..."
+fetch_domains_comments \
+    "https://securereload.tech/Phishing/Lists/Latest/"
 
 echo "[*] updating stamparm lists..."
 fetch_domains_comments \
@@ -647,7 +661,6 @@ fetch_domains_comments \
 
 echo "[*] updating various web-to-onion lists..."
 fetch_domains_comments \
-    "https://raw.githubusercontent.com/keithmccammon/tor2web-domains/master/tor2web-domains.txt" \
     "https://raw.githubusercontent.com/WalnutATiie/google_search/master/resourcefile/keywords_google.txt"
 
 echo "[*] updating viriback list..."
@@ -663,10 +676,6 @@ fetch_hosts \
 #echo "[*] updating vxvault list..."
 #fetch_url_hosts \
 #    "http://vxvault.net/URL_List.php"
-
-echo "[*] updating yhonay antipopads list..."
-fetch_hosts \
-    "https://raw.githubusercontent.com/Yhonay/antipopads/master/hosts"
 
 sanitize_domain_list > "$OUT_FILE"
 
